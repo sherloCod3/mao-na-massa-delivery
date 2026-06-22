@@ -1,14 +1,36 @@
+import os
+from pathlib import Path
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.base import Base
 from app.config import settings
 
-engine = create_async_engine(settings.database_url, echo=False)
+
+def _ensure_db_dir(db_url: str) -> str:
+    """Extract the file path from a SQLite URL and ensure its parent directory exists.
+
+    Handles both:
+      - sqlite+aiosqlite:///./mao-na-massa.db   (relative path)
+      - sqlite+aiosqlite:////data/mao-na-massa.db (absolute path)
+    """
+    prefix = "sqlite+aiosqlite:///"
+    if not db_url.startswith(prefix):
+        return db_url
+    path_str = db_url[len(prefix):]
+    db_path = Path(path_str)
+    # Railway sometimes sets DATABASE_URL pointing to a volume not yet mounted
+    # — ensure the directory exists so SQLite can create the file
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    return db_url
+
+
+engine = create_async_engine(_ensure_db_dir(settings.database_url), echo=False)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def init_db():
-    """Create all tables. Safe to call on every startup — SQLAlchemy checks existence."""
+    """Create all tables. Safe to call on startup — SQLAlchemy checks existence."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
