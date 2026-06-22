@@ -1,0 +1,28 @@
+[project]
+name = "mao-na-massa"
+version = "0.1.0"
+description = "Mão na Massa - Gestão de produção e vendas de salgados e doces"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "aiosqlite>=0.20.0",
+    "alembic>=1.14.0",
+    "pydantic-settings>=2.7.0",
+    "pydantic>=2.10.0",
+]
+
+[project.scripts]
+mao-na-massa = "app.main:start"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv]
+dev-dependencies = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]

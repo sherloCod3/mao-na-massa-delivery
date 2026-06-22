@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+  <!-- Cooking pot icon in terracota -->
+  <path d="M10 22c0-5.523 4.477-10 10-10h8c5.523 0 10 4.477 10 10v14a4 4 0 01-4 4H14a4 4 0 01-4-4V22z" fill="#C73E1D"/>
+  <path d="M18 12V8m12 4V8" stroke="#C73E1D" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M24 18v12m-6-6h12" stroke="#FDF8F3" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M6 22h36" stroke="#C73E1D" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
