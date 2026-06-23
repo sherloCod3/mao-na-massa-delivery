@@ -1,7 +1,8 @@
 # Mão na Massa — Briefing do Projeto
 
-> **Gerado em:** 21/06/2026 (após 4 compactações de contexto)
-> **Propósito:** Documento de referência única orientando o agente com contexto completo do projeto.
+> **Gerado em:** 22/06/2026 (após deploy Railway + poda de skills)
+> **Propósito:** Documento de referência única — **DEVE ser consultado primeiro em toda retomada de sessão** antes de qualquer ação no projeto.
+> **Obrigatório:** Ao iniciar uma nova sessão ou retomar o trabalho neste projeto, SEMPRE carregue este briefing como fonte primária de contexto.
 
 ---
 
@@ -15,8 +16,9 @@
 6. [O Que Falta Fazer (Roadmap)](#6-o-que-falta-fazer-roadmap)
 7. [Caminhos Importantes / Arquivos-Chave](#7-caminhos-importantes--arquivos-chave)
 8. [Skills Hermes Disponíveis](#8-skills-hermes-disponíveis)
-9. [Config de Desenvolvimento Atual](#9-config-de-desenvolvimento-atual)
+9. [Config de Desenvolvimento e Produção](#9-config-de-desenvolvimento-e-produção)
 10. [Pendências Técnicas Conhecidas](#10-pendências-técnicas-conhecidas)
+11. [Lições Aprendidas — Deploy Railway](#11-lições-aprendidas--deploy-railway)
 
 ---
 
@@ -37,6 +39,15 @@
 | Ícones | Lucide React | 1.21 |
 | PWA | vite-plugin-pwa | 1.3 |
 | Validação | Pydantic v2 | 2.10+ |
+| Builder Railway | RAILPACK | — |
+
+### URLs de Produção (Railway)
+
+| Serviço | URL |
+|---------|-----|
+| **Frontend** | https://grateful-nourishment-production-e24f.up.railway.app |
+| **Backend** | https://mao-na-massa-delivery-production.up.railway.app |
+| **Swagger Docs** | https://mao-na-massa-delivery-production.up.railway.app/docs |
 
 ### Princípios
 
@@ -44,7 +55,7 @@
 - **Sem login para clientes**: Acesso por link único (token UUID via WhatsApp).
 - **Mobile-first**: UI pensada primeiro pro celular da admin.
 - **Tailwind v4**: `@import "tailwindcss"` + plugin `@tailwindcss/vite` (sem PostCSS, sem tailwind.config.js).
-- **Tema custom `massa-*`**: Paleta vermelha (50-900) com `dc2626` como primária.
+- **Tema custom `massa-*`**: Paleta terracota artesanal (`#C73E1D` primary) com fundo creme (#FDF8F3), títulos Playfair Display, corpo Inter.
 
 ---
 
@@ -77,6 +88,10 @@ Pedido
 ItemPedido
   id (PK), pedido_id (FK), variacao_id (FK), quantidade,
   preco_unitario, customizacoes (JSON text), subtotal
+  
+ListaCompraItem
+  id (PK), nome, quantidade, unidade (g/ml/un), preco_estimado,
+  comprado (bool), created_at, updated_at
 ```
 
 ### Cálculo de Custo
@@ -141,36 +156,32 @@ preco_sugerido = custo_unitario × (1 + margem_percentual / 100)
 │   │   │   ├── Pedidos.tsx      → Tabela + navegação
 │   │   │   ├── PedidoNovo.tsx   → Formulário de pedido
 │   │   │   ├── PedidoDetalhe.tsx→ Detalhe + atualização de status
+│   │   │   ├── ListaCompras.tsx → Lista de compras c/ checkbox
 │   │   │   └── PublicTracking.tsx→ Tracking público (sem layout)
 │   │   ├── App.tsx              → React Router config
 │   │   ├── main.tsx             → Entry point
 │   │   └── index.css            → @import "tailwindcss" + tema massa-*
+│   ├── public/
+│   │   ├── icon-192.png         → PWA icon (pode não existir ainda)
+│   │   ├── icon-512.png         → PWA icon (pode não existir ainda)
+│   │   └── panela.svg           → Favicon temático
 │   ├── package.json
 │   ├── vite.config.ts           → Proxy /api → :8000, PWA, Tailwind
 │   ├── tsconfig.json
 │   ├── tsconfig.app.json
-│   └── tsconfig.node.json
+│   ├── tsconfig.node.json
+│   ├── railway.json             → RAILPACK + npm install + publishPath:dist
+│   └── .node-version            → 22.14.0
 ├── docs/
 │   ├── architecture.md          → Documento de arquitetura
 │   ├── briefing.md              ← Este documento
 │   └── plans/
 │       └── 2026-06-21-fase1-backend-setup.md
+├── .agents/
+│   └── skills/                  → Skills locais (não versionadas no git)
 ├── README.md                    → Documentação principal
 └── .gitignore
 ```
-
-### Resumo de Tamanho
-
-| Categoria | Arquivos | Linhas |
-|-----------|----------|--------|
-| Models (6) | Python | 193 |
-| Routers (6) | Python | 710 |
-| Schemas (6) | Python | 214 |
-| Config/Base/Main | Python | 72 |
-| Frontend pages (7) | TSX | 925 |
-| API client | TS | 137 |
-| Layout + App | TSX | 85 |
-| **Total código** | **~23 arquivos** | **~2.336 linhas** |
 
 ---
 
@@ -189,13 +200,12 @@ preco_sugerido = custo_unitario × (1 + margem_percentual / 100)
 - [x] Tracking público (rota `/publico/pedidos/{token}` sem auth)
 - [x] Dashboard: `/hoje` e `/periodo` (pedidos ativos, faturamento)
 - [x] CORS configurado para frontend dev
-- [x] SQLite funcional com init_db automático no startup
 
 ### ✅ Fase 2 — Frontend Admin
 
 - [x] Setup Vite 8 + React 19 + TypeScript 6 + Tailwind 4
-- [x] Tema `massa-*` (paleta vermelha custom)
-- [x] Layout com sidebar (Dashboard, Pedidos, Produtos, Ingredientes)
+- [x] Tema `massa-*` (paleta terracota artesanal)
+- [x] Layout com sidebar (Dashboard, Pedidos, Produtos, Ingredientes, Lista de Compras)
 - [x] Página Dashboard com cards + gráfico de distribuição por status
 - [x] CRUD de ingredientes (tabela + formulário)
 - [x] CRUD de produtos com modais de variação e receita
@@ -210,43 +220,6 @@ preco_sugerido = custo_unitario × (1 + margem_percentual / 100)
 - [x] Página PublicTracking com timeline de status
 - [x] Proteção contra pedido cancelado (410 Gone)
 
-### ✅ Infra & Config
-
-- [x] PWA configurado (vite-plugin-pwa, autoUpdate, manifest, icons)
-- [x] README.md completo (193 linhas)
-- [x] docs/architecture.md (173 linhas)
-- [x] docs/plans/ com plano de implementação da fase 1
-- [x] `.env` com defaults funcionais
-- [x] `.env.example` (backend + frontend)
-- [x] Alembic async configurado (migração inicial gerada e aplicada)
-- [x] Testes de API: 17 testes, pytest + httpx AsyncClient
-- [x] Servidores rodando (backend :8000, frontend :5173)
-- [x] Build frontend passa (`npm run build` OK: CSS 24KB, JS 274KB)
-- [x] SecurityHeadersMiddleware aplicado (HSTS, XFO, CSP)
-
----
-
-## 5. O Que Está Sendo Feito Agora
-
-### 🔄 Cálculo de Custos Reais no Dashboard
-
-**Fase Core — concluída.** O backend agora calcula:
-
-- `custo_total_estimado` no dashboard `/hoje` (soma do custo unitário de cada variação × quantidade)
-- `lucro_estimado` no dashboard `/hoje` (faturamento − custo)
-- `total_custos` e `total_lucro` no dashboard `/periodo` (apenas pedidos entregues)
-- Margem percentual exibida no frontend
-
-O cálculo usa a `@property custo_unitario` do model `Variacao`, que soma ingredientes da receita com base em `preco_atual / embalagem`.
-
-### 🔄 Skills Python do Projeto
-
-8 skills Python foram adicionadas em `.agents/skills/` (versionamento ignorado via `.gitignore`). Carregadas on-demand quando necessário.
-
----
-
-## 6. O Que Falta Fazer (Roadmap)
-
 ### ✅ Fase Core — Custos & Dashboard
 
 - [x] Cálculo de custo real no backend (`custo_total_estimado`, `lucro_estimado`)
@@ -258,22 +231,68 @@ O cálculo usa a `@property custo_unitario` do model `Variacao`, que soma ingred
 - [x] Model `ListaCompraItem` + schemas + CRUD completo
 - [x] Frontend com formulário, soma automática, checkbox de comprado
 - [x] Limpar comprados, editar valor inline, resumo com totais
-- [x] Migração Alembic (tabela `lista_compras`)
 - [x] Link na sidebar (`/lista-compras`)
 
-### 👨‍🎨 UI/UX Personalizado — Opção 3 "Misto"
+### ✅ UI/UX Personalizado — Opção 3 "Misto"
 
 - [x] **Tipografia:** Playfair Display (títulos) + Inter (corpo)
-- [x] **Paleta terracota:** massa-* refinada do vermelho Tailwind para terracota artesanal (#C73E1D primary)
+- [x] **Paleta terracota:** massa-* refinada do vermelho Tailwind para terracota artesanal
 - [x] **Fundo creme texturizado:** `#FDF8F3` com overlay noise
-- [x] **Cards com sombra e cantos suaves:** `.card` (rounded-xl, shadow terracota, border sutil)
-- [x] **Botões:** `.btn`/`.btn-primary`/`.btn-secondary` com feedback tátil
-- [x] **Inputs customizados:** borda terracota no focus
-- [x] **Sidebar refinada:** sombra sutil, ativo em massa-700
-- [x] **Favicon temático:** panela terracota SVG
-- [x] **lang="pt-BR"** no HTML
+- [x] **Cards, botões, inputs customizados**
+- [x] **Sidebar refinada, favicon temático**
 
-### Fase 3 — PWA & Offline
+### ✅ Deploy Railway (22/06/2026)
+
+- [x] Frontend estático servido via RAILPACK com `publishPath: "dist"`
+- [x] Backend FastAPI com SQLite via Volume `/data`
+- [x] CORS configurado com URL pública do frontend
+- [x] Node 22 forçado via `.node-version` + env var
+- [x] Build usa `npm install` em vez de `npm ci` (evita EBUSY)
+
+### ✅ Infra & Config
+
+- [x] PWA configurado (vite-plugin-pwa, autoUpdate, manifest, icons)
+- [x] README.md completo
+- [x] docs/architecture.md
+- [x] docs/briefing.md
+- [x] `.env` com defaults funcionais
+- [x] `.env.example` (backend + frontend)
+- [x] Testes de API: 17 testes, pytest + httpx AsyncClient
+- [x] SecurityHeadersMiddleware aplicado (HSTS, XFO, CSP)
+
+---
+
+## 5. O Que Está Sendo Feito Agora
+
+### 🔄 PWA & Offline (Fase 3 — próxima)
+
+A fase de deploy Railway está concluída. A próxima grande frente é:
+
+- Service Worker funcional com Workbox (já configurado no vite-plugin-pwa)
+- IndexedDB via Dexie.js para cache offline
+- Sincronização quando online
+- Testar Add to Home Screen
+- Ícones PWA reais (192x192, 512x512)
+
+### 🔄 Manutenção de Skills
+
+Skills locais em `.agents/skills/` foram auditadas e podadas (22/06/2026):
+- **7 skills removidas** (outros ecossistemas: Copilot, Claude Code, Azure, Rails)
+- **9 skills mantidas** (audit, check, improver, issue, optimizer, router, scanner, suggester, writer)
+- **`skill-writer` adaptada** com suporte a Hermes Agent
+
+---
+
+## 6. O Que Falta Fazer (Roadmap)
+
+### ✅ Fase 4 — Deploy (Concluído)
+
+- [x] Railway: frontend (RAILPACK + dist) e backend (FastAPI + SQLite Volume)
+- [x] Env vars configuradas (CORS, DATABASE_URL, VITE_API_URL)
+- [x] Node version fixada (22.14.0 via .node-version)
+- [x] BuildCommand: `npm install --no-audit --no-fund && npm run build`
+
+### 👨‍🎨 Fase 3 — PWA & Offline
 
 - [ ] Service Worker funcional com Workbox
 - [ ] IndexedDB via Dexie.js para cache offline
@@ -282,20 +301,11 @@ O cálculo usa a `@property custo_unitario` do model `Variacao`, que soma ingred
 - [ ] Ícones PWA reais (192x192, 512x512)
 - [ ] manifest.json completo
 
-### Fase 4 — Deploy
-
-- [ ] Dockerfile para backend
-- [ ] Dockerfile para frontend (Nginx)
-- [ ] docker-compose.yml
-- [ ] Script de deploy em VPS
-- [ ] HTTPS (Let's Encrypt)
-- [ ] CI/CD (GitHub Actions)
-
 ### Fase 5 — Relatórios
 
 - [ ] Gráficos de faturamento mensal
 - [ ] Relatório de custos por período
-- [ ] Cálculo de lucro real (dashboard/periodo custos)
+- [ ] Cálculo de lucro real (dashboard/periodo)
 - [ ] Sazonalidade (produtos mais vendidos)
 - [ ] Exportação CSV/PDF
 
@@ -310,7 +320,6 @@ O cálculo usa a `@property custo_unitario` do model `Variacao`, que soma ingred
 - [ ] `total_custos` e `total_lucro` no DashboardPeriodoResponse (hoje retorna 0.0)
 - [ ] Autenticação admin básica (pelo menos senha única ou token fixo)
 - [ ] Testes automatizados (pytest backend, vitest frontend)
-- [ ] Migrations com Alembic (já incluído nas deps, não configurado)
 - [ ] Soft delete padronizado em todas as entidades
 - [ ] Paginação nas listas (pedidos, ingredientes)
 - [ ] Filtro de pedidos por data no frontend
@@ -322,112 +331,112 @@ O cálculo usa a `@property custo_unitario` do model `Variacao`, que soma ingred
 
 ## 7. Caminhos Importantes / Arquivos-Chave
 
-### Para ler durante auditoria:
+### Para leitura obrigatória em retomada:
 
 | Prioridade | Arquivo | Motivo |
 |-----------|---------|--------|
+| 🔴 | `docs/briefing.md` | Este documento — contexto completo do projeto |
 | 🔴 | `backend/app/main.py` | Entry point — lifespan, CORS, routers |
 | 🔴 | `backend/app/database.py` | Engine + session — init_db, get_session |
-| 🔴 | `backend/app/models/variacao.py` | Contém `custo_unitario` e `preco_sugerido` — lógica de negócio crítica |
+| 🔴 | `backend/app/models/variacao.py` | Contém `custo_unitario` e `preco_sugerido` |
 | 🔴 | `backend/app/models/pedido.py` | StatusPedido enum — core business logic |
 | 🔴 | `backend/app/routers/pedidos.py` | CRUD + cálculo de subtotal + customizacoes |
-| 🔴 | `backend/app/routers/variacoes.py` | Rotas de receita + custo — lógica mais complexa |
+| 🔴 | `backend/app/routers/variacoes.py` | Rotas de receita + custo |
+| 🔴 | `frontend/railway.json` | Config deploy Railway |
 | 🟡 | `backend/app/routers/dashboard.py` | Queries de agregação |
-| 🟡 | `backend/app/schemas/pedido.py` | Schemas — trackingResponse tem campos limitados |
-| 🟡 | `frontend/src/api/client.ts` | Tipos + chamadas API — contrato front/back |
-| 🟡 | `frontend/src/App.tsx` | Rotas — tracking público sem Layout |
-| 🟢 | `frontend/src/pages/*.tsx` | Páginas — verificar erros, DX, DX |
-| 🟢 | `frontend/vite.config.ts` | PWA + proxy + build config |
-| 🟢 | `backend/pyproject.toml` | Dependências |
-
-### Servidores Ativos
-
-| Serviço | URL | PID | Status |
-|---------|-----|-----|--------|
-| Backend (Uvicorn) | `http://localhost:8000` | 388610 | ✅ Rodando |
-| Frontend (Vite) | `http://localhost:5173` | 388720 | ✅ Rodando |
-| Docs API | `http://localhost:8000/docs` | — | ✅ Swagger UI |
-
-### Arquivos de Config
-
-| Arquivo | Conteúdo |
-|---------|---------|
-| `backend/.env` | `DATABASE_URL=sqlite+aiosqlite:///./mao-na-massa.db` |
-| `backend/.env` | `CORS_ORIGINS=http://localhost:5173` |
-| `frontend/vite.config.ts` | Proxy `/api` → `localhost:8000`, PWA manifest |
+| 🟡 | `backend/app/schemas/pedido.py` | Schemas — trackingResponse |
+| 🟡 | `frontend/src/api/client.ts` | Tipos + chamadas API |
 
 ---
 
 ## 8. Skills Hermes Disponíveis
 
-Diretório: `/home/sherlocod3/Documents/projects/.agents/skills/`
+### Skills do Hermes Agent (globais em ~/.hermes/skills/)
 
-### Aprovadas para auditoria (execução imediata após briefing):
+Skills instaladas no Hermes que se aplicam a este projeto:
 
-| Skill | Foco |
-|-------|------|
-| `production-code-audit` | Varredura linha a linha, boas práticas |
-| `vulnerability-scanner` | OWASP 2025, segurança |
-| `dependency-management-deps-audit` | Supply chain, CVEs |
-| `vibe-code-cleanup` | Limpeza, refatoração pós-auditoria |
-| `project-skill-audit` | Recomendar skills faltantes pro projeto |
+| Skill | Foco | Como usar |
+|-------|------|-----------|
+| `paas-deployment` | Deploy Railway/PaaS Python full-stack | `skill_view(name='paas-deployment')` |
+| `react-vite-frontend` | React 19 + Vite 8 + Tailwind 4 | Tem o padrão Misto theme |
+| `fastapi-async-backend` | Backend async FastAPI | Referência de padrões |
+| `plan` | Plano de implementação markdown | Usar para planejar fases |
+| `project-briefing` | Criar/manter briefing | Absorveu a skill `briefing` |
+| `requesting-code-review` | Code review pré-commit | Usar antes de commits grandes |
 
-### Skills ignoradas (não aplicáveis agora):
+### Skills locais em `.agents/skills/` (não versionadas)
 
-- `agent-memory-systems` (CoALA, teórica)
-- `context-management-context-save`, `context-restore` (genericas demais)
-- `context-optimization`, `context-window-management` (genéricas)
-- `bug-hunter` (processo já usado, pode ser útil depois)
-- `error-diagnostics-error-trace` (Sentry → Fase 4)
-- `senior-architect` (diagramas, pode ser útil depois)
-- `security-audit` (provavelmente coberto por vulnerability-scanner)
-- `clean-code` (provavelmente coberto por vibe-code-cleanup)
+Skills mantidas após auditoria de 22/06/2026:
+
+| Skill | Tipo | Uso |
+|-------|------|-----|
+| `skill-check` | Validação | Validar SKILL.md contra agentskills spec |
+| `skill-audit` | Segurança | Auditar skills de terceiros antes de instalar |
+| `skill-scanner` | Segurança | Scanner com script Python |
+| `skill-issue` | Diagnóstico | Diagnosticar por que skill não ativa |
+| `skill-optimizer` | Otimização | Otimizar skills com dados de sessão |
+| `skill-router` | Navegação | Ajudar a escolher skill correta |
+| `skill-writer` | Criação ✨ | Workflow canônico (adaptada p/ Hermes) |
+| `skill-improver` | Melhoria | Melhoria iterativa de skills |
+| `skill-suggester` | Sugestão | Sugerir skills baseado em histórico |
 
 ---
 
-## 9. Config de Desenvolvimento Atual
+## 9. Config de Desenvolvimento e Produção
 
-### Ambiente
+### Ambiente Local
 
 ```bash
 # Host
 OS: Linux, Arch Linux (7.0.12-arch1-1)
 Python: 3.14.5 (sem pip, usa uv)
-Node: via npm
+Node: via npm (22.x)
 
 # Backend
 cd /home/sherlocod3/Documents/projects/mao-na-massa/backend
-uv sync                    # Deps instaladas
+source .venv/bin/activate    # ou: uv sync
 uv run uvicorn app.main:app --reload  # :8000
 
 # Frontend
 cd /home/sherlocod3/Documents/projects/mao-na-massa/frontend
-npm install                # Deps instaladas
-npm run dev                # :5173 (com proxy /api)
+npm install                   # Deps instaladas
+npm run dev                   # :5173 (com proxy /api)
 
 # Build
-cd frontend && npm run build   # ✅ Passa sem erros
+cd frontend && npm run build  # ✅ Gera dist/ com assets compilados
 ```
 
-### Dependências Backend (pyproject.toml)
+### Env vars — Produção (Railway)
 
-- fastapi>=0.115.0
-- uvicorn[standard]>=0.34.0
-- sqlalchemy[asyncio]>=2.0.36
-- aiosqlite>=0.20.0
-- alembic>=1.14.0
-- pydantic-settings>=2.7.0
-- pydantic>=2.10.0
+**Backend:**
+| Variável | Valor |
+|----------|-------|
+| `DATABASE_URL` | `sqlite+aiosqlite:////data/mao-na-massa.db` |
+| `CORS_ORIGINS` | `https://grateful-nourishment-production-e24f.up.railway.app,http://localhost:5173` |
 
-### Dependências Frontend (package.json)
+**Frontend:**
+| Variável | Valor |
+|----------|-------|
+| `VITE_API_URL` | `https://mao-na-massa-delivery-production.up.railway.app/api/v1` |
 
-- @tailwindcss/vite ^4.3.1
-- lucide-react ^1.21.0
-- react ^19.2.6
-- react-dom ^19.2.6
-- react-router-dom ^7.18.0
-- tailwindcss ^4.3.1
-- Dev: vite ^8.0.12, vite-plugin-pwa ^1.3.0, typescript ~6.0.2
+### railway.json (frontend)
+
+```json
+{
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "npm install --no-audit --no-fund && npm run build"
+  },
+  "deploy": {
+    "static": true,
+    "publishPath": "dist"
+  }
+}
+```
+
+### railway.json (backend)
+
+Build automático (Python/FastAPI detectado). Volume `/data` montado para SQLite.
 
 ---
 
@@ -435,34 +444,71 @@ cd frontend && npm run build   # ✅ Passa sem erros
 
 ### 🐛 Potenciais Problemas
 
-1. **Customizações salvas como string JSON** (`ItemPedido.customizacoes` é `str | None`, não JSON nativo SQLite). Funciona mas perde queryabilidade.
-2. **DashboardPeriodoResponse.total_custos = 0.0** — Placeholder, cálculo real complexo de fazer em tempo real.
-3. **Sem paginação** — Listas de pedidos/ingredientes podem ficar pesadas com muitos registros.
-4. **Sem migrations** — Alembic incluso nas deps mas não configurado. `init_db` recria tabelas toda vez.
-5. **Sem testes** — Nenhum teste automatizado (nem backend, nem frontend).
-6. **Soft delete inconsistente** — Ingrediente/Produto/Variacao usam `ativo=False`, mas alguns endpoints podem não filtrar corretamente.
-7. **CustomizacaoItem no schema** tem `preco` mas `nome` não tem validação de tamanho.
-8. **PedidoDetalhe.tsx** — Atualização de status não recarrega dados após mudança (precisa verificar).
-9. **PWA icons** — `icon-192.png` e `icon-512.png` referenciados no manifest mas podem não existir (verificar `public/`).
+1. **Customizações salvas como string JSON** — `ItemPedido.customizacoes` é `str | None`
+2. **DashboardPeriodoResponse.total_custos = 0.0** — Placeholder
+3. **Sem paginação** — Listas podem ficar pesadas
+4. **Sem testes automatizados** — Nenhum teste no projeto
+5. **Soft delete inconsistente** — Ingrediente/Produto/Variacao usam `ativo=False`
+6. **PedidoDetalhe.tsx** — Atualização de status não recarrega dados
+7. **PWA icons** — `icon-192.png` e `icon-512.png` podem não existir em `public/`
+8. **Sem auth** — Admin acessa por saber a URL (aceito para MVP)
 
 ### 📌 Decisões de Arquitetura
 
 - **Sem autenticação no MVP**: Admin acessa por saber a URL. Tracking público usa token UUID.
 - **SQLite no lugar de PostgreSQL**: Zero setup. Migra depois se precisar.
-- **React Router v7**: Substitui solução anterior de hash-router.
 - **Tailwind v4 sem PostCSS**: Usa `@tailwindcss/vite` plugin direto.
-- **`custo_unitario` é `@property` no model**: Calculado em tempo real, não armazenado no banco.
-
-### 📋 Skills Memory
-
-Informação já salva na memória do Hermes:
-
-- User = brasileiro, prefere português BR para tudo
-- Usuário valoriza dependências mínimas
-- Projeto "Mão na Massa" é app portfolio para food business da esposa
-- Prefere soluções simples (SQLite, sem auth MVP, stack direta)
-- Quer working deliverables com tool output real
+- **`custo_unitario` é `@property` no model**: Calculado em tempo real, não armazenado.
+- **RAILPACK + npm install**: Escolhido porque NIXPACKS ignora `publishPath`.
 
 ---
 
-> **Nota sobre compactações:** Este briefing foi elaborado após 4 compactações de contexto. O conteúdo acima foi verificado contra os arquivos atuais do projeto no disco e servidores rodando. Para máxima precisão, sempre referencie os arquivos diretamente via read_file/terminal quando executar as auditorias.
+## 11. Lições Aprendidas — Deploy Railway
+
+### Problema: EBUSY no build frontend
+
+`npm ci` tenta remover `node_modules/` inteiro. No Railway, `.vite` e `.cache` são mounts especiais que não podem ser removidos.
+
+**Solução:** Usar `npm install --no-audit --no-fund` em vez de `npm ci`. `npm install` só adiciona/atualiza pacotes, não tenta apagar `node_modules`.
+
+### Problema: publishPath ignorado pelo NIXPACKS
+
+O builder NIXPACKS não respeita `publishPath: "dist"` do `railway.json`. O frontend servia o `index.html` fonte em vez do build.
+
+**Solução:** Usar **RAILPACK** como builder. RAILPACK respeita `publishPath` e serve o diretório correto.
+
+### Problema: Node 20.18.1 incompatível com Vite 8
+
+Vite 8 e rolldown exigem `^20.19.0 || >=22.12.0`. Sem pinning, o binding nativo do rolldown falha (`Cannot find module '@rolldown/binding-linux-x64-gnu'`).
+
+**Solução:** Criar `.node-version` com `22.14.0` no diretório do frontend. Alternativa: env var `NIXPACKS_NODE_VERSION=22` (só funciona com NIXPACKS).
+
+### Problema: nixpacks.toml com sintaxe inválida
+
+```toml
+[phases]
+nodeVersion = "22"
+```
+Causa erro: `invalid type: string "22", expected struct Phase for key 'phases.nodeVersion'`
+
+**Solução:** Não usar `nixpacks.toml` — preferir `.node-version` ou env var no dashboard.
+
+### Problema: CORS com URL .railway.internal
+
+A URL `.railway.internal` é interna do Railway. O navegador não reconhece para CORS.
+
+**Solução:** Usar a URL pública do frontend (`.up.railway.app`) no `CORS_ORIGINS`.
+
+### Configuração Final Recomendada (frontend)
+
+| Item | Valor |
+|------|-------|
+| Builder | RAILPACK |
+| Build command | `npm install --no-audit --no-fund && npm run build` |
+| Node version | `.node-version` com `22.14.0` |
+| Static | `true` |
+| publishPath | `dist` |
+
+---
+
+> **Instrução para retomada de sessão:** Este briefing é a fonte primária de contexto. Sempre que uma nova sessão for iniciada ou o contexto for compactado, carregue este documento primeiro. Se alguma informação aqui estiver desatualizada, atualize-a imediatamente e prossiga. As URLs de produção e arquivos de configuração são a fonte da verdade — quando houver dúvida, consulte os arquivos diretamente com `read_file`/`terminal`.
