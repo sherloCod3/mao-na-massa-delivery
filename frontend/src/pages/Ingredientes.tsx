@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X, History } from 'lucide-react'
+import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X, History, ClipboardList } from 'lucide-react'
 import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline, movimentarEstoqueOffline, listarMovimentacoesOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Ingrediente, MovimentacaoEstoque } from '../api/client'
+import PageHeader from '../components/PageHeader'
 
 export default function Ingredientes() {
   const { toast } = useToast()
@@ -104,15 +105,18 @@ export default function Ingredientes() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Ingredientes</h1>
-        <button
-          onClick={() => { setShowForm(true); setEditId(null); setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000, quantidade_estoque: 0, estoque_minimo: 0 }) }}
-          className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Novo Ingrediente
-        </button>
-      </div>
+      <PageHeader
+        title="Ingredientes"
+        icon={<ClipboardList className="w-6 h-6" />}
+        action={
+          <button
+            onClick={() => { setShowForm(true); setEditId(null); setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000, quantidade_estoque: 0, estoque_minimo: 0 }) }}
+            className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700 transition-colors min-w-[44px] min-h-[44px] justify-center"
+          >
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Novo Ingrediente</span>
+          </button>
+        }
+      />
 
       {/* Alerta de estoque baixo */}
       {estoqueBaixo.length > 0 && (
@@ -237,21 +241,23 @@ export default function Ingredientes() {
                     R$ {(item.preco_atual / item.embalagem).toFixed(4)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 p-1" title="Editar">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => openHistorico(item)} title="Histórico" className="text-gray-600 hover:text-gray-800 p-1 ml-1">
-                      <History className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => openMovForm(item, 'entrada')} title="Dar entrada" className="text-green-600 hover:text-green-800 p-1 ml-1">
-                      <Package className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => openMovForm(item, 'saida')} title="Dar saída" className="text-orange-600 hover:text-orange-800 p-1 ml-1">
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800 p-1 ml-1" title="Desativar">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="Editar">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => openHistorico(item)} title="Histórico" className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <History className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => openMovForm(item, 'entrada')} title="Dar entrada" className="text-green-600 hover:text-green-800 hover:bg-green-50 p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <Package className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => openMovForm(item, 'saida')} title="Dar saída" className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <ArrowUpDown className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="Desativar">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
+
 @theme {
   /* Terracota palette — warmer, more handmade than Tailwind red */
   --color-massa-50: #fdf3ef;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Package } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { variacoesApi } from '../api/client'
 import { listarProdutosOffline, listarIngredientesOffline, obterReceitaOffline, obterCustoOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
@@ -21,7 +22,7 @@ export default function Produtos() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Produtos</h1>
+      <PageHeader title="Produtos" icon={<Package className="w-6 h-6" />} />
 
       {showVariacao && <VariacaoForm produtoId={showVariacao.produtoId} onClose={() => setShowVariacao(null)} onSave={loadProdutos} />}
       {showReceita && <ReceitaForm variacaoId={showReceita.variacaoId} nome={showReceita.nome} ingredientes={ingredientes}

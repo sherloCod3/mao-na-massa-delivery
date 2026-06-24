@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   ShoppingCart, Plus, Trash2, Check, X, DollarSign, ClipboardList,
-  Lightbulb, Save, Download, Archive,
+  Lightbulb, Save, Download, Archive, ShoppingBag,
 } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { listaComprasApi } from '../api/client'
 import { listarComprasOffline, obterResumoComprasOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
@@ -151,13 +152,11 @@ export default function ListaCompras() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <ShoppingCart className="w-7 h-7 text-massa-500" />
-          <h1 className="text-2xl font-bold text-gray-800">Lista de Compras</h1>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Lista de Compras"
+        icon={<ShoppingBag className="w-6 h-6" />}
+        action={
+          <div className="flex items-center gap-2">
           {/* Salvar */}
           <button
             onClick={() => { setNomeSalvar(''); setShowSalvarModal(true) }}
@@ -202,8 +201,9 @@ export default function ListaCompras() {
               <Archive className="w-4 h-4" /> Limpar
             </button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Sugestões */}
       {sugestoes.length > 0 && (

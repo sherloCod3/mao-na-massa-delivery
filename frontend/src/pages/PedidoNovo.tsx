@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ShoppingBag } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { pedidosApi } from '../api/client'
 import { listarProdutosOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
@@ -62,12 +63,7 @@ export default function PedidoNovo() {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => navigate('/pedidos')} className="p-2 hover:bg-gray-100 rounded-lg">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800">Novo Pedido</h1>
-      </div>
+      <PageHeader title="Novo Pedido" icon={<ShoppingBag className="w-6 h-6" />} backTo="/pedidos" />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         {/* Dados do cliente */}

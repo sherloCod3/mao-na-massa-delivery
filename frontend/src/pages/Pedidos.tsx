@@ -5,22 +5,9 @@ import type { Pedido } from '../api/client'
 import { useNavigate } from 'react-router-dom'
 
 import { gerarLinkWhatsApp, mensagemNovoPedido } from '../utils/whatsapp'
-
-const statusLabels: Record<string, string> = {
-  recebido: '📥 Recebido',
-  producao: '👩‍🍳 Em Produção',
-  entrega: '🚚 Em Entrega',
-  entregue: '✅ Entregue',
-  cancelado: '❌ Cancelado',
-}
-
-const statusColors: Record<string, string> = {
-  recebido: 'bg-blue-100 text-blue-800',
-  producao: 'bg-yellow-100 text-yellow-800',
-  entrega: 'bg-purple-100 text-purple-800',
-  entregue: 'bg-green-100 text-green-800',
-  cancelado: 'bg-red-100 text-red-800',
-}
+import { getStatusLabel, getStatusColorSimple } from '../utils/pedido'
+import PageHeader from '../components/PageHeader'
+import { ShoppingBag } from 'lucide-react'
 
 export default function Pedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
@@ -30,15 +17,19 @@ export default function Pedidos() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Pedidos</h1>
-        <button onClick={() => navigate('/pedidos/novo')}
-          className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700">
-          <Plus className="w-4 h-4" /> Novo Pedido
-        </button>
-      </div>
+      <PageHeader
+        title="Pedidos"
+        icon={<ShoppingBag className="w-6 h-6" />}
+        action={
+          <button onClick={() => navigate('/pedidos/novo')}
+            className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700 transition-colors min-w-[44px] min-h-[44px] justify-center">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Novo Pedido</span>
+          </button>
+        }
+      />
 
-      <div className="bg-white card overflow-hidden">
+      {/* Desktop: tabela */}
+      <div className="hidden sm:block bg-white card overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -57,8 +48,8 @@ export default function Pedidos() {
                 <td className="px-4 py-3 text-sm font-mono text-gray-500">#{p.id}</td>
                 <td className="px-4 py-3 text-sm font-medium text-gray-800">{p.cliente_nome}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[p.status] || 'bg-gray-100'}`}>
-                    {statusLabels[p.status] || p.status}
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColorSimple(p.status)}`}>
+                    {getStatusLabel(p.status)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">{p.forma_pagamento || '-'}</td>
@@ -75,15 +66,15 @@ export default function Pedidos() {
                           const link = gerarLinkWhatsApp(p.cliente_whatsapp!, msg)
                           if (link) window.open(link, '_blank')
                         }}
-                        className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                        className="text-green-600 hover:text-green-800 p-2 rounded hover:bg-green-50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title="Enviar WhatsApp"
                       >
                         <MessageCircle className="w-4 h-4" />
                       </button>
                     )}
                     <button onClick={() => navigate(`/pedidos/${p.id}`)}
-                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
-                      <Search className="w-4 h-4" /> Detalhes
+                      className="text-blue-600 hover:text-blue-800 text-sm p-2 rounded hover:bg-blue-50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                      <Search className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
@@ -94,6 +85,54 @@ export default function Pedidos() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: card list */}
+      <div className="sm:hidden space-y-3">
+        {pedidos.map(p => (
+          <div
+            key={p.id}
+            onClick={() => navigate(`/pedidos/${p.id}`)}
+            className="bg-white card p-4 hover:shadow-md transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-mono text-gray-500">#{p.id}</span>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColorSimple(p.status)}`}>
+                {getStatusLabel(p.status)}
+              </span>
+            </div>
+            <p className="font-medium text-gray-800">{p.cliente_nome}</p>
+            <div className="flex items-center justify-between mt-2 text-sm">
+              <span className="text-gray-500">{p.forma_pagamento || '-'}</span>
+              <span className="font-bold text-massa-600">R$ {p.total.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+              <span className="text-xs text-gray-400">
+                {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                {p.cliente_whatsapp && (
+                  <button
+                    onClick={() => {
+                      const msg = mensagemNovoPedido(p.cliente_nome, p.id, p.total)
+                      const link = gerarLinkWhatsApp(p.cliente_whatsapp!, msg)
+                      if (link) window.open(link, '_blank')
+                    }}
+                    className="text-green-600 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    title="Enviar WhatsApp"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {pedidos.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            <p>Nenhum pedido encontrado</p>
+          </div>
+        )}
       </div>
     </div>
   )

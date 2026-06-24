@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ShoppingBag, DollarSign, TrendingUp, Clock, TrendingDown, PiggyBank,
-  BarChart3, Medal, CalendarDays, Download, AlertTriangle, Package,
+  BarChart3, Medal, CalendarDays, Download, AlertTriangle, Package, LayoutDashboard,
 } from 'lucide-react'
 import { obterDashboardHojeOffline, listarIngredientesOffline } from '../services/offlineClient'
 import { dashboardApi } from '../api/client'
@@ -10,6 +10,7 @@ import MensalChart from '../components/MensalChart'
 import TopProdutos from '../components/TopProdutos'
 import EstoqueChart from '../components/EstoqueChart'
 import { exportCSV } from '../utils/csv'
+import PageHeader from '../components/PageHeader'
 
 type Tab = 'hoje' | 'mensal' | 'produtos' | 'estoque'
 
@@ -18,7 +19,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl mb-6">Dashboard</h1>
+      <PageHeader title="Dashboard" icon={<LayoutDashboard className="w-6 h-6" />} />
 
       {/* Estoque baixo - aparece em todas as tabs */}
       <EstoqueBaixoAlert />
