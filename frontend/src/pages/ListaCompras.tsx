@@ -4,6 +4,8 @@ import {
   Lightbulb, Save, Download, Archive,
 } from 'lucide-react'
 import { listaComprasApi } from '../api/client'
+import { listarComprasOffline, obterResumoComprasOffline } from '../services/offlineClient'
+import { useToast } from '../components/Toast'
 import type { ListaCompraItem, ListaCompraResumo, ListaSalvaResumo } from '../api/client'
 
 export default function ListaCompras() {
@@ -18,13 +20,14 @@ export default function ListaCompras() {
   const [showSalvarModal, setShowSalvarModal] = useState(false)
   const [nomeSalvar, setNomeSalvar] = useState('')
   const [showSalvas, setShowSalvas] = useState(false)
+  const { toast } = useToast()
 
   const carregar = useCallback(async () => {
     setLoading(true)
     try {
       const [itensData, resumoData, sugestoesData, salvasData] = await Promise.all([
-        listaComprasApi.listar(),
-        listaComprasApi.resumo(),
+        listarComprasOffline(),
+        obterResumoComprasOffline(),
         listaComprasApi.sugestoes(),
         listaComprasApi.listarSalvas(),
       ])
@@ -44,56 +47,94 @@ export default function ListaCompras() {
   const adicionar = async (nome?: string, qtd?: number, valor?: number | null) => {
     const itemNome = nome || novoNome.trim()
     if (!itemNome) return
-    await listaComprasApi.criar({
-      nome: itemNome,
-      quantidade: qtd ?? (novoQtd ? parseFloat(novoQtd) : 1),
-      valor_estimado: valor !== undefined ? valor : (novoValor ? parseFloat(novoValor) : null),
-    })
-    setNovoNome('')
-    setNovoValor('')
-    setNovoQtd('1')
-    await carregar()
+    try {
+      await listaComprasApi.criar({
+        nome: itemNome,
+        quantidade: qtd ?? (novoQtd ? parseFloat(novoQtd) : 1),
+        valor_estimado: valor !== undefined ? valor : (novoValor ? parseFloat(novoValor) : null),
+      })
+      toast('success', 'Item adicionado!')
+      setNovoNome('')
+      setNovoValor('')
+      setNovoQtd('1')
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao adicionar item')
+    }
   }
 
   const toggleComprado = async (item: ListaCompraItem) => {
-    await listaComprasApi.atualizar(item.id, { comprado: !item.comprado })
-    await carregar()
+    try {
+      await listaComprasApi.atualizar(item.id, { comprado: !item.comprado })
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao atualizar item')
+    }
   }
 
   const atualizarValor = async (item: ListaCompraItem, valor: string) => {
     const v = valor ? parseFloat(valor) : null
     if (v === item.valor_estimado) return
-    await listaComprasApi.atualizar(item.id, { valor_estimado: v })
-    await carregar()
+    try {
+      await listaComprasApi.atualizar(item.id, { valor_estimado: v })
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao atualizar valor')
+    }
   }
 
   const remover = async (id: number) => {
-    await listaComprasApi.remover(id)
-    await carregar()
+    try {
+      await listaComprasApi.remover(id)
+      toast('success', 'Item removido')
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao remover item')
+    }
   }
 
   const limparComprados = async () => {
-    await listaComprasApi.limparComprados()
-    await carregar()
+    try {
+      await listaComprasApi.limparComprados()
+      toast('success', 'Itens comprados removidos!')
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao limpar itens')
+    }
   }
 
   const salvarLista = async () => {
     if (!nomeSalvar.trim()) return
-    await listaComprasApi.salvar(nomeSalvar.trim())
-    setNomeSalvar('')
-    setShowSalvarModal(false)
-    await carregar()
+    try {
+      await listaComprasApi.salvar(nomeSalvar.trim())
+      toast('success', 'Lista salva!')
+      setNomeSalvar('')
+      setShowSalvarModal(false)
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao salvar lista')
+    }
   }
 
   const carregarSalva = async (id: number) => {
-    await listaComprasApi.carregar(id)
-    setShowSalvas(false)
-    await carregar()
+    try {
+      await listaComprasApi.carregar(id)
+      toast('success', 'Lista carregada!')
+      setShowSalvas(false)
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao carregar lista')
+    }
   }
 
   const deletarSalva = async (id: number) => {
-    await listaComprasApi.deletarSalva(id)
-    await carregar()
+    try {
+      await listaComprasApi.deletarSalva(id)
+      toast('success', 'Lista removida')
+      await carregar()
+    } catch {
+      toast('error', 'Erro ao remover lista')
+    }
   }
 
   const pendentes = itens.filter(i => !i.comprado)

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
-import { pedidosApi, produtosApi } from '../api/client'
+import { pedidosApi } from '../api/client'
+import { listarProdutosOffline } from '../services/offlineClient'
+import { useToast } from '../components/Toast'
 import type { Produto, Variacao } from '../api/client'
 
 interface ItemPedido {
@@ -14,11 +16,12 @@ interface ItemPedido {
 
 export default function PedidoNovo() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [form, setForm] = useState({ cliente_nome: '', cliente_whatsapp: '', forma_pagamento: 'PIX', observacoes: '' })
   const [itens, setItens] = useState<ItemPedido[]>([])
 
-  useEffect(() => { produtosApi.listar().then(setProdutos) }, [])
+  useEffect(() => { listarProdutosOffline().then(setProdutos) }, [])
 
   const addItem = (v: Variacao, pnome: string) => {
     setItens([...itens, { variacao_id: v.id, quantidade: 1, preco_unitario: v.preco_venda || 0, variacao_nome: `${pnome} - ${v.nome}`, customizacoes: [] }])
@@ -33,17 +36,25 @@ export default function PedidoNovo() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (itens.length === 0) return alert('Adicione pelo menos um item!')
-    await pedidosApi.criar({
-      ...form,
-      itens: itens.map(i => ({
-        variacao_id: i.variacao_id,
-        quantidade: i.quantidade,
-        preco_unitario: i.preco_unitario,
-        customizacoes: i.customizacoes,
-      })),
-    })
-    navigate('/pedidos')
+    if (itens.length === 0) {
+      toast('error', 'Adicione pelo menos um item ao pedido!')
+      return
+    }
+    try {
+      await pedidosApi.criar({
+        ...form,
+        itens: itens.map(i => ({
+          variacao_id: i.variacao_id,
+          quantidade: i.quantidade,
+          preco_unitario: i.preco_unitario,
+          customizacoes: i.customizacoes,
+        })),
+      })
+      toast('success', 'Pedido criado com sucesso!')
+      navigate('/pedidos')
+    } catch {
+      toast('error', 'Erro ao criar pedido')
+    }
   }
 
   return (

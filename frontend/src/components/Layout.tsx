@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { CookingPot, Home, ShoppingBag, Package, ClipboardList, ShoppingCart } from 'lucide-react'
+import OnlineStatus from './OnlineStatus'
+import PwaInstallPrompt from './PwaInstallPrompt'
+import { ToastProvider } from './Toast'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
@@ -11,6 +14,7 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
+    <ToastProvider>
     <div className="flex h-screen">
       {/* Sidebar */}
       <aside className="w-64 bg-massa-800 text-white flex flex-col shrink-0 shadow-[2px_0_12px_-6px_rgba(0,0,0,0.15)]">
@@ -48,11 +52,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto relative">
         <div className="p-8 max-w-6xl mx-auto">
           {children}
         </div>
       </main>
+
+      {/* PWA Install Banner */}
+      <PwaInstallPrompt />
+
+      {/* Offline indicator */}
+      <OnlineStatus />
     </div>
+    </ToastProvider>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { pedidosApi } from '../api/client'
+import { listarPedidosOffline } from '../services/offlineClient'
 import type { Pedido } from '../api/client'
 import { useNavigate } from 'react-router-dom'
 
@@ -24,7 +24,7 @@ export default function Pedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const navigate = useNavigate()
 
-  useEffect(() => { pedidosApi.listar().then(setPedidos) }, [])
+  useEffect(() => { listarPedidosOffline().then(setPedidos) }, [])
 
   return (
     <div>

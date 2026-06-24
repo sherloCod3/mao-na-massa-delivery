@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { produtosApi, variacoesApi, ingredientesApi } from '../api/client'
+import { variacoesApi } from '../api/client'
+import { listarProdutosOffline, listarIngredientesOffline, obterReceitaOffline, obterCustoOffline } from '../services/offlineClient'
+import { useToast } from '../components/Toast'
 import type { Produto, Ingrediente, CustoVariacao } from '../api/client'
 
 export default function Produtos() {
@@ -10,11 +12,11 @@ export default function Produtos() {
   const [ingredientes, setIngredientes] = useState<Ingrediente[]>([])
 
   useEffect(() => {
-    produtosApi.listar().then(setProdutos)
-    ingredientesApi.listar().then(setIngredientes)
+    listarProdutosOffline().then(setProdutos)
+    listarIngredientesOffline().then(setIngredientes)
   }, [])
 
-  const loadProdutos = () => produtosApi.listar().then(setProdutos)
+  const loadProdutos = () => listarProdutosOffline().then(setProdutos)
 
   return (
     <div>
@@ -73,12 +75,18 @@ export default function Produtos() {
 
 function VariacaoForm({ produtoId, onClose, onSave }: { produtoId: number; onClose: () => void; onSave: () => void }) {
   const [form, setForm] = useState({ nome: '', preco_venda: 0, preco_minimo: 0, margem_percentual: 60 })
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await variacoesApi.criar(produtoId, { ...form, preco_minimo: form.preco_minimo || null, preco_venda: form.preco_venda || null })
-    onSave()
-    onClose()
+    try {
+      await variacoesApi.criar(produtoId, { ...form, preco_minimo: form.preco_minimo || null, preco_venda: form.preco_venda || null })
+      toast('success', 'Variação criada!')
+      onSave()
+      onClose()
+    } catch {
+      toast('error', 'Erro ao criar variação')
+    }
   }
 
   return (
@@ -121,20 +129,29 @@ function ReceitaForm({ variacaoId, nome, ingredientes, onClose, onSave }: {
   const [receita, setReceita] = useState<any[]>([])
   const [custo, setCusto] = useState<CustoVariacao | null>(null)
   const [addIngrediente, setAddIngrediente] = useState({ ingrediente_id: 0, quantidade: 0 })
+  const { toast } = useToast()
 
   const load = async () => {
-    setReceita(await variacoesApi.receita(variacaoId))
-    setCusto(await variacoesApi.custo(variacaoId))
+    setReceita(await obterReceitaOffline(variacaoId))
+    setCusto(await obterCustoOffline(variacaoId))
   }
 
   useEffect(() => { load() }, [variacaoId])
 
   const handleAdd = async () => {
-    if (!addIngrediente.ingrediente_id || !addIngrediente.quantidade) return
-    await variacoesApi.adicionarIngrediente(variacaoId, addIngrediente)
-    setAddIngrediente({ ingrediente_id: 0, quantidade: 0 })
-    load()
-    onSave()
+    if (!addIngrediente.ingrediente_id || !addIngrediente.quantidade) {
+      toast('error', 'Selecione um ingrediente e informe a quantidade')
+      return
+    }
+    try {
+      await variacoesApi.adicionarIngrediente(variacaoId, addIngrediente)
+      toast('success', 'Ingrediente adicionado à receita!')
+      setAddIngrediente({ ingrediente_id: 0, quantidade: 0 })
+      load()
+      onSave()
+    } catch {
+      toast('error', 'Erro ao adicionar ingrediente')
+    }
   }
 
   return (

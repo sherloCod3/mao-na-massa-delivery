@@ -1,29 +1,37 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { ingredientesApi } from '../api/client'
+import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline } from '../services/offlineClient'
+import { useToast } from '../components/Toast'
 import type { Ingrediente } from '../api/client'
 
 export default function Ingredientes() {
+  const { toast } = useToast()
   const [items, setItems] = useState<Ingrediente[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
   const [form, setForm] = useState({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000 })
 
-  const load = () => ingredientesApi.listar().then(setItems)
+  const load = () => listarIngredientesOffline().then(setItems)
 
   useEffect(() => { load() }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editId) {
-      await ingredientesApi.atualizar(editId, form)
-    } else {
-      await ingredientesApi.criar(form)
+    try {
+      if (editId) {
+        await atualizarIngredienteOffline(editId, form)
+        toast('success', 'Ingrediente atualizado!')
+      } else {
+        await criarIngredienteOffline(form)
+        toast('success', 'Ingrediente criado!')
+      }
+      setShowForm(false)
+      setEditId(null)
+      setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000 })
+      load()
+    } catch {
+      toast('error', 'Erro ao salvar ingrediente')
     }
-    setShowForm(false)
-    setEditId(null)
-    setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000 })
-    load()
   }
 
   const handleEdit = (item: Ingrediente) => {
@@ -34,8 +42,13 @@ export default function Ingredientes() {
 
   const handleDelete = async (id: number) => {
     if (confirm('Desativar este ingrediente?')) {
-      await ingredientesApi.desativar(id)
-      load()
+      try {
+        await desativarIngredienteOffline(id)
+        toast('success', 'Ingrediente desativado')
+        load()
+      } catch {
+        toast('error', 'Erro ao desativar ingrediente')
+      }
     }
   }
 

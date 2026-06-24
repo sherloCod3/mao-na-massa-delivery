@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { ShoppingBag, DollarSign, TrendingUp, Clock, TrendingDown, PiggyBank } from 'lucide-react'
-import { dashboardApi } from '../api/client'
+import { obterDashboardHojeOffline } from '../services/offlineClient'
 import type { DashboardHoje } from '../api/client'
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardHoje | null>(null)
 
   useEffect(() => {
-    dashboardApi.hoje().then(setData).catch(console.error)
+    obterDashboardHojeOffline().then(setData).catch(console.error)
   }, [])
 
   if (!data) {

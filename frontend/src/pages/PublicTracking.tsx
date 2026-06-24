@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { CookingPot, Clock } from 'lucide-react'
-import { trackingApi } from '../api/client'
+import { obterTrackingOffline } from '../services/offlineClient'
 import type { Pedido } from '../api/client'
 
 const statusInfo: Record<string, { icon: string; label: string; color: string }> = {
@@ -21,7 +21,7 @@ export default function PublicTracking() {
 
   useEffect(() => {
     if (!token) return
-    trackingApi.tracking(token)
+    obterTrackingOffline(token)
       .then(setPedido)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))

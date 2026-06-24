@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy } from 'lucide-react'
 import { pedidosApi } from '../api/client'
+import { obterPedidoDetalheOffline } from '../services/offlineClient'
+import { useToast } from '../components/Toast'
 import type { Pedido } from '../api/client'
 
 const statusLabels: Record<string, string> = {
@@ -26,9 +28,10 @@ export default function PedidoDetalhe() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [pedido, setPedido] = useState<Pedido | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
-    if (id) pedidosApi.obter(parseInt(id)).then(setPedido)
+    if (id) obterPedidoDetalheOffline(parseInt(id)).then(setPedido)
   }, [id])
 
   if (!pedido) return <div className="text-center py-12 text-gray-400">Carregando...</div>
@@ -40,14 +43,19 @@ export default function PedidoDetalhe() {
   const advanceStatus = async () => {
     const nextIdx = currentIdx + 1
     if (nextIdx < statusFlow.length) {
-      const updated = await pedidosApi.atualizarStatus(pedido.id, statusFlow[nextIdx])
-      setPedido(updated)
+      try {
+        const updated = await pedidosApi.atualizarStatus(pedido.id, statusFlow[nextIdx])
+        setPedido(updated)
+        toast('success', `Status atualizado para "${statusLabels[statusFlow[nextIdx]].replace(/^.{2} /, '')}"`)
+      } catch {
+        toast('error', 'Erro ao atualizar status')
+      }
     }
   }
 
   const copyTracking = () => {
     navigator.clipboard.writeText(trackingUrl)
-    alert('Link de tracking copiado!')
+    toast('success', 'Link de tracking copiado!')
   }
 
   return (
