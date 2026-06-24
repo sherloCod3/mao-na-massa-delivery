@@ -8,9 +8,10 @@ import { dashboardApi } from '../api/client'
 import type { DashboardHoje, DashboardMensal, DashboardPeriodo, DashboardTopProdutos, Ingrediente } from '../api/client'
 import MensalChart from '../components/MensalChart'
 import TopProdutos from '../components/TopProdutos'
+import EstoqueChart from '../components/EstoqueChart'
 import { exportCSV } from '../utils/csv'
 
-type Tab = 'hoje' | 'mensal' | 'produtos'
+type Tab = 'hoje' | 'mensal' | 'produtos' | 'estoque'
 
 export default function Dashboard() {
   const [tab, setTab] = useState<Tab>('hoje')
@@ -28,6 +29,7 @@ export default function Dashboard() {
           { id: 'hoje' as Tab, label: 'Hoje', icon: Clock },
           { id: 'mensal' as Tab, label: 'Mensal', icon: BarChart3 },
           { id: 'produtos' as Tab, label: 'Produtos', icon: Medal },
+          { id: 'estoque' as Tab, label: 'Estoque', icon: Package },
         ].map(t => (
           <button
             key={t.id}
@@ -45,6 +47,7 @@ export default function Dashboard() {
       </div>
 
       {tab === 'hoje' && <DashboardHojeView />}
+      {tab === 'estoque' && <EstoqueChart />}
       {tab === 'mensal' && <DashboardMensalView />}
       {tab === 'produtos' && <DashboardProdutosView />}
     </div>

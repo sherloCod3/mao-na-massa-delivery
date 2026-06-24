@@ -39,6 +39,10 @@ export async function movimentarEstoqueOffline(id: number, data: { tipo: 'entrad
   return result
 }
 
+export async function listarMovimentacoesOffline(id: number, limite = 50) {
+  return ingredientesApi.movimentacoes(id, limite)
+}
+
 // ─── Produtos ────────────────────────────────────────────────
 
 export async function listarProdutosOffline() {

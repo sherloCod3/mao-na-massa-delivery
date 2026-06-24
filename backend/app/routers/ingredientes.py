@@ -94,6 +94,27 @@ async def desativar_ingrediente(
     await session.commit()
 
 
+@router.get("/{ingrediente_id}/movimentacoes", response_model=list[MovimentacaoResponse])
+async def listar_movimentacoes(
+    ingrediente_id: int,
+    limite: int = 50,
+    session: AsyncSession = Depends(get_session),
+):
+    """Retorna o histórico de movimentações de estoque de um ingrediente."""
+    ingrediente = await session.get(Ingrediente, ingrediente_id)
+    if not ingrediente:
+        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+
+    query = (
+        select(MovimentacaoEstoque)
+        .where(MovimentacaoEstoque.ingrediente_id == ingrediente_id)
+        .order_by(MovimentacaoEstoque.created_at.desc())
+        .limit(limite)
+    )
+    result = await session.execute(query)
+    return result.scalars().all()
+
+
 @router.post("/{ingrediente_id}/movimentar", response_model=MovimentacaoResponse)
 async def movimentar_estoque(
     ingrediente_id: int,

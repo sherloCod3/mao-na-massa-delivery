@@ -215,6 +215,8 @@ export const ingredientesApi = {
   desativar: (id: number) => request<void>(`/ingredientes/${id}`, { method: 'DELETE' }),
   movimentar: (id: number, data: { tipo: 'entrada' | 'saida'; quantidade: number; motivo?: string }) =>
     request<MovimentacaoEstoque>(`/ingredientes/${id}/movimentar`, { method: 'POST', body: JSON.stringify(data) }),
+  movimentacoes: (id: number, limite = 50) =>
+    request<MovimentacaoEstoque[]>(`/ingredientes/${id}/movimentacoes?limite=${limite}`),
 }
 
 export const produtosApi = {

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X } from 'lucide-react'
-import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline, movimentarEstoqueOffline } from '../services/offlineClient'
+import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X, History } from 'lucide-react'
+import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline, movimentarEstoqueOffline, listarMovimentacoesOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
-import type { Ingrediente } from '../api/client'
+import type { Ingrediente, MovimentacaoEstoque } from '../api/client'
 
 export default function Ingredientes() {
   const { toast } = useToast()
@@ -17,6 +17,9 @@ export default function Ingredientes() {
   })
   const [movForm, setMovForm] = useState<{ open: boolean; id: number; nome: string; tipo: 'entrada' | 'saida'; quantidade: number; motivo: string }>({
     open: false, id: 0, nome: '', tipo: 'entrada', quantidade: 0, motivo: '',
+  })
+  const [histModal, setHistModal] = useState<{ open: boolean; nome: string; movs: MovimentacaoEstoque[] }>({
+    open: false, nome: '', movs: [],
   })
 
   const load = () => listarIngredientesOffline().then(setItems)
@@ -67,6 +70,15 @@ export default function Ingredientes() {
   }
 
   const unidadeLabel = (u: string) => u === 'g' ? 'Gramas (g)' : u === 'ml' ? 'Mililitros (ml)' : u === 'un' ? 'Unidade' : u
+
+  const openHistorico = async (item: Ingrediente) => {
+    try {
+      const movs = await listarMovimentacoesOffline(item.id)
+      setHistModal({ open: true, nome: item.nome, movs })
+    } catch (err) {
+      toast('error', 'Erro ao carregar histórico')
+    }
+  }
 
   const openMovForm = (item: Ingrediente, tipo: 'entrada' | 'saida') => {
     setMovForm({ open: true, id: item.id, nome: item.nome, tipo, quantidade: 0, motivo: '' })
@@ -228,6 +240,9 @@ export default function Ingredientes() {
                     <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 p-1" title="Editar">
                       <Pencil className="w-4 h-4" />
                     </button>
+                    <button onClick={() => openHistorico(item)} title="Histórico" className="text-gray-600 hover:text-gray-800 p-1 ml-1">
+                      <History className="w-4 h-4" />
+                    </button>
                     <button onClick={() => openMovForm(item, 'entrada')} title="Dar entrada" className="text-green-600 hover:text-green-800 p-1 ml-1">
                       <Package className="w-4 h-4" />
                     </button>
@@ -247,6 +262,61 @@ export default function Ingredientes() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal de histórico de movimentações */}
+      {histModal.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setHistModal({ open: false, nome: '', movs: [] })}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <History className="w-5 h-5 text-gray-500" />
+                Histórico — {histModal.nome}
+              </h2>
+              <button onClick={() => setHistModal({ open: false, nome: '', movs: [] })} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-6">
+              {histModal.movs.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">Nenhuma movimentação registrada</p>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
+                      <th className="pb-2 pr-4">Data</th>
+                      <th className="pb-2 pr-4">Tipo</th>
+                      <th className="pb-2 pr-4 text-right">Qtd</th>
+                      <th className="pb-2 pr-4 text-right">Saldo Ant.</th>
+                      <th className="pb-2 pr-4 text-right">Saldo Atual</th>
+                      <th className="pb-2">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-sm">
+                    {histModal.movs.map(m => (
+                      <tr key={m.id}>
+                        <td className="py-2.5 pr-4 text-gray-500 whitespace-nowrap">
+                          {new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-2.5 pr-4">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            m.tipo === 'entrada' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {m.tipo === 'entrada' ? '📦 Entrada' : '📤 Saída'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 pr-4 text-right font-medium">{m.quantidade}</td>
+                        <td className="py-2.5 pr-4 text-right text-gray-500">{m.saldo_anterior}</td>
+                        <td className="py-2.5 pr-4 text-right font-semibold">{m.saldo_posterior}</td>
+                        <td className="py-2.5 text-gray-500 max-w-[200px] truncate" title={m.motivo || ''}>{m.motivo || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de movimentação de estoque */}
       {movForm.open && (
