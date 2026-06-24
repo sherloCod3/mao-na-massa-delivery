@@ -1,10 +1,10 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from sqlalchemy import select, func
+from fastapi import APIRouter, BackgroundTasks, Depends, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.errors import NotFoundError, ValidationError
 from app.models.ingrediente import Ingrediente
-from app.models.receita_item import ReceitaItem
 from app.schemas.ingrediente import (
     IngredienteCreate,
     IngredienteResponse,
@@ -13,7 +13,6 @@ from app.schemas.ingrediente import (
 from app.models.movimentacao_estoque import MovimentacaoEstoque
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse
 from app.services.notificador import notificar_estoque_baixo
-from app.config import settings
 
 router = APIRouter(prefix="/ingredientes", tags=["Ingredientes"])
 
@@ -49,7 +48,7 @@ async def obter_ingrediente(
 ):
     ingrediente = await session.get(Ingrediente, ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", ingrediente_id)
     return ingrediente
 
 
@@ -62,7 +61,7 @@ async def atualizar_ingrediente(
 ):
     ingrediente = await session.get(Ingrediente, ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", ingrediente_id)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -89,7 +88,7 @@ async def desativar_ingrediente(
 ):
     ingrediente = await session.get(Ingrediente, ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", ingrediente_id)
     ingrediente.ativo = False
     await session.commit()
 
@@ -103,7 +102,7 @@ async def listar_movimentacoes(
     """Retorna o histórico de movimentações de estoque de um ingrediente."""
     ingrediente = await session.get(Ingrediente, ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", ingrediente_id)
 
     query = (
         select(MovimentacaoEstoque)
@@ -124,7 +123,7 @@ async def movimentar_estoque(
     """Registra entrada ou saída de estoque e atualiza o saldo do ingrediente."""
     ingrediente = await session.get(Ingrediente, ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", ingrediente_id)
 
     saldo_anterior = ingrediente.quantidade_estoque
 
@@ -132,12 +131,9 @@ async def movimentar_estoque(
         novo_saldo = saldo_anterior + data.quantidade
     else:  # saida
         if data.quantidade > saldo_anterior:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Estoque insuficiente. Disponível: {saldo_anterior:.2f},"
-                    f" solicitado: {data.quantidade:.2f}"
-                ),
+            raise ValidationError(
+                message=f"Estoque insuficiente. Disponível: {saldo_anterior:.2f}, solicitado: {data.quantidade:.2f}",
+                details={"disponivel": saldo_anterior, "solicitado": data.quantidade},
             )
         novo_saldo = saldo_anterior - data.quantidade
 
@@ -172,4 +168,11 @@ async def _verificar_estoque_baixo(
         return
 
     if quantidade_estoque <= estoque_minimo:
-        await notificar_estoque_baixo(nome, ingrediente_id)
+        try:
+            await notificar_estoque_baixo(nome, ingrediente_id)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Falha ao notificar estoque baixo para ingrediente %d (%s)",
+                ingrediente_id, nome,
+            )

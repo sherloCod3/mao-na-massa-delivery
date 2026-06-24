@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.errors import NotFoundError
 from app.models.produto import Produto
 from app.schemas.produto import ProdutoCreate, ProdutoResponse, ProdutoUpdate
 
@@ -47,7 +48,7 @@ async def obter_produto(
     result = await session.execute(query)
     produto = result.scalar_one_or_none()
     if not produto:
-        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        raise NotFoundError("Produto", produto_id)
     return produto
 
 
@@ -59,7 +60,7 @@ async def atualizar_produto(
 ):
     produto = await session.get(Produto, produto_id)
     if not produto:
-        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        raise NotFoundError("Produto", produto_id)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -77,6 +78,6 @@ async def desativar_produto(
 ):
     produto = await session.get(Produto, produto_id)
     if not produto:
-        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        raise NotFoundError("Produto", produto_id)
     produto.ativo = False
     await session.commit()

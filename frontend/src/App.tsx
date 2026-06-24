@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import { Clock } from 'lucide-react'
+import ErrorBoundary from './components/ErrorBoundary'
+import { Loading } from './components/AsyncWrapper'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Ingredientes = lazy(() => import('./pages/Ingredientes'))
@@ -13,10 +14,17 @@ const PedidoDetalhe = lazy(() => import('./pages/PedidoDetalhe'))
 const PublicTracking = lazy(() => import('./pages/PublicTracking'))
 
 function PageFallback() {
+  return <Loading height="h-64" message="Carregando página..." />
+}
+
+/** Wraps a lazy-loaded page with Suspense + ErrorBoundary */
+function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-center h-64">
-      <Clock className="w-8 h-8 text-massa-300 animate-spin" />
-    </div>
+    <ErrorBoundary>
+      <Suspense fallback={<PageFallback />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
   )
 }
 
@@ -26,17 +34,17 @@ export default function App() {
       <Routes>
         {/* Public tracking — no layout */}
         <Route path="/track/:token" element={
-          <Suspense fallback={<PageFallback />}><PublicTracking /></Suspense>
+          <Page><PublicTracking /></Page>
         } />
 
         {/* Admin — com layout */}
-        <Route path="/" element={<Layout><Suspense fallback={<PageFallback />}><Dashboard /></Suspense></Layout>} />
-        <Route path="/pedidos" element={<Layout><Suspense fallback={<PageFallback />}><Pedidos /></Suspense></Layout>} />
-        <Route path="/pedidos/novo" element={<Layout><Suspense fallback={<PageFallback />}><PedidoNovo /></Suspense></Layout>} />
-        <Route path="/pedidos/:id" element={<Layout><Suspense fallback={<PageFallback />}><PedidoDetalhe /></Suspense></Layout>} />
-        <Route path="/produtos" element={<Layout><Suspense fallback={<PageFallback />}><Produtos /></Suspense></Layout>} />
-        <Route path="/lista-compras" element={<Layout><Suspense fallback={<PageFallback />}><ListaCompras /></Suspense></Layout>} />
-        <Route path="/ingredientes" element={<Layout><Suspense fallback={<PageFallback />}><Ingredientes /></Suspense></Layout>} />
+        <Route path="/" element={<Layout><Page><Dashboard /></Page></Layout>} />
+        <Route path="/pedidos" element={<Layout><Page><Pedidos /></Page></Layout>} />
+        <Route path="/pedidos/novo" element={<Layout><Page><PedidoNovo /></Page></Layout>} />
+        <Route path="/pedidos/:id" element={<Layout><Page><PedidoDetalhe /></Page></Layout>} />
+        <Route path="/produtos" element={<Layout><Page><Produtos /></Page></Layout>} />
+        <Route path="/lista-compras" element={<Layout><Page><ListaCompras /></Page></Layout>} />
+        <Route path="/ingredientes" element={<Layout><Page><Ingredientes /></Page></Layout>} />
       </Routes>
     </BrowserRouter>
   )

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.errors import NotFoundError, AppError
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido
 from app.models.produto import Produto
@@ -28,10 +29,14 @@ async def tracking_pedido(
     pedido = result.scalar_one_or_none()
 
     if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+        raise NotFoundError("Pedido")
 
     if pedido.status == "cancelado":
-        raise HTTPException(status_code=410, detail="Este pedido foi cancelado")
+        raise AppError(
+            message="Este pedido foi cancelado",
+            status_code=410,
+            code="PEDIDO_CANCELADO",
+        )
 
     # Buscar nomes das variações e produtos para cada item
     if pedido.itens:

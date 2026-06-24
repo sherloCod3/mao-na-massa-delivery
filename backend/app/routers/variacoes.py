@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.errors import NotFoundError
 from app.models.ingrediente import Ingrediente
 from app.models.receita_item import ReceitaItem
 from app.models.variacao import Variacao
@@ -82,7 +83,7 @@ async def atualizar_variacao(
     result = await session.execute(query)
     variacao = result.scalar_one_or_none()
     if not variacao:
-        raise HTTPException(status_code=404, detail="Variação não encontrada")
+        raise NotFoundError("Variação", variacao_id)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -102,7 +103,7 @@ async def desativar_variacao(
 ):
     variacao = await session.get(Variacao, variacao_id)
     if not variacao:
-        raise HTTPException(status_code=404, detail="Variação não encontrada")
+        raise NotFoundError("Variação", variacao_id)
     variacao.ativo = False
     await session.commit()
 
@@ -139,12 +140,12 @@ async def adicionar_ingrediente_receita(
     # Verify the variation exists
     variacao = await session.get(Variacao, variacao_id)
     if not variacao:
-        raise HTTPException(status_code=404, detail="Variação não encontrada")
+        raise NotFoundError("Variação", variacao_id)
 
     # Verify the ingredient exists
     ingrediente = await session.get(Ingrediente, data.ingrediente_id)
     if not ingrediente:
-        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+        raise NotFoundError("Ingrediente", data.ingrediente_id)
 
     item = ReceitaItem(variacao_id=variacao_id, **data.model_dump())
     session.add(item)
@@ -169,7 +170,7 @@ async def atualizar_receita_item(
 ):
     item = await session.get(ReceitaItem, receita_item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item da receita não encontrado")
+        raise NotFoundError("Item da receita", receita_item_id)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -187,7 +188,7 @@ async def remover_ingrediente_receita(
 ):
     item = await session.get(ReceitaItem, receita_item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item da receita não encontrado")
+        raise NotFoundError("Item da receita", receita_item_id)
     await session.delete(item)
     await session.commit()
 
@@ -207,7 +208,7 @@ async def calcular_custo_variacao(
     result = await session.execute(query)
     variacao = result.scalar_one_or_none()
     if not variacao:
-        raise HTTPException(status_code=404, detail="Variação não encontrada")
+        raise NotFoundError("Variação", variacao_id)
 
     return CustoResponse(
         variacao_id=variacao.id,

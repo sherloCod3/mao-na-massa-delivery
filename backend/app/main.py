@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,6 +7,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 from app.database import init_db
+from app.errors import ErrorHandlerMiddleware, RequestIDMiddleware
 from app.models import *  # noqa: F401, F403 — register models with Base.metadata
 from app.routers import (
     dashboard_router,
@@ -17,6 +19,8 @@ from app.routers import (
     publico_router,
     variacoes_router,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def security_headers_middleware(request, call_next):
@@ -32,7 +36,9 @@ async def security_headers_middleware(request, call_next):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Iniciando banco de dados...")
     await init_db()
+    logger.info("Banco de dados pronto.")
     yield
 
 
@@ -56,6 +62,10 @@ app.add_middleware(
 # Security headers
 app.add_middleware(BaseHTTPMiddleware, dispatch=security_headers_middleware)
 
+# Error handling — deve vir DEPOIS dos middlewares de segurança mas ANTES dos routers
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(RequestIDMiddleware)
+
 # Routers
 app.include_router(ingredientes_router, prefix="/api/v1")
 app.include_router(produtos_router, prefix="/api/v1")
@@ -69,4 +79,4 @@ app.include_router(notificacoes_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "Mão na Massa API", "docs": "/docs"}
+    return {"message": "Mão na Massa API", "version": "0.1.0", "docs": "/docs"}

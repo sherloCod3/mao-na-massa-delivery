@@ -1,4 +1,5 @@
 import { enfileirarMutacao, MutationQueuedError } from '../services/mutationQueue'
+import { ApiError } from '../utils/errors'
 
 // ─── Notificações ────────────────────────────────────────────────
 
@@ -20,33 +21,110 @@ export interface NotificacaoResponse {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
+// ─── Retry Configuration ─────────────────────────────────────────
+
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 1000
+const RETRYABLE_STATUSES = [408, 429, 502, 503, 504]
+const RETRYABLE_ERRORS = ['TypeError: Failed to fetch', 'TypeError: NetworkError']
+
+function shouldRetry(status: number, errorMessage: string): boolean {
+  if (RETRYABLE_STATUSES.includes(status)) return true
+  return RETRYABLE_ERRORS.some(msg => errorMessage.includes(msg))
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// ─── Main Request Function ───────────────────────────────────────
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  try {
-    const res = await fetch(`${API_BASE}${url}`, {
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
-      ...options,
-    })
-    if (!res.ok) {
-      const text = await res.text().catch(() => 'Erro desconhecido')
-      throw new Error(`HTTP ${res.status}: ${text}`)
-    }
-    if (res.status === 204) return undefined as T
-    return res.json()
-  } catch (err) {
-    // When offline and this is a write operation (POST/PUT/DELETE), queue it
-    const method = options?.method || 'GET'
-    if (!navigator.onLine && method !== 'GET') {
-      const body = options?.body ? JSON.parse(options.body as string) : undefined
-      await enfileirarMutacao({
-        method,
-        endpoint: url,
-        body,
-        entityType: url.split('/')[1] || 'unknown',
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}${url}`, {
+        headers: { 'Content-Type': 'application/json', ...options?.headers },
+        ...options,
       })
-      throw new MutationQueuedError()
+
+      if (!res.ok) {
+        // Try to parse backend JSON error
+        let message = `HTTP ${res.status}`
+        let code = 'HTTP_ERROR'
+        let details: Record<string, unknown> | null = null
+        let requestId: string | null = null
+
+        try {
+          const body = await res.json()
+          if (body?.error) {
+            message = body.error.message || message
+            code = body.error.code || code
+            requestId = body.error.request_id || null
+            details = body.error.details || null
+          }
+        } catch {
+          const text = await res.text().catch(() => '')
+          if (text) message = text
+        }
+
+        const apiError = new ApiError(message, code, res.status, requestId, details)
+
+        // Retry? — only for idempotent GET requests
+        if (options?.method === 'GET' && attempt < MAX_RETRIES && shouldRetry(res.status, message)) {
+          await delay(RETRY_DELAY_MS * (attempt + 1))
+          lastError = apiError
+          continue
+        }
+
+        throw apiError
+      }
+
+      if (res.status === 204) return undefined as T
+      return res.json()
+    } catch (err) {
+      // Retry network errors for GET requests
+      const isNetworkError = err instanceof TypeError
+      if (options?.method === 'GET' && attempt < MAX_RETRIES && isNetworkError) {
+        await delay(RETRY_DELAY_MS * (attempt + 1))
+        lastError = err
+        continue
+      }
+
+      // When offline and this is a write operation (POST/PUT/DELETE), queue it
+      const method = options?.method || 'GET'
+      if (!navigator.onLine && method !== 'GET') {
+        const body = options?.body ? JSON.parse(options.body as string) : undefined
+        await enfileirarMutacao({
+          method,
+          endpoint: url,
+          body,
+          entityType: url.split('/')[1] || 'unknown',
+        })
+        throw new MutationQueuedError()
+      }
+
+      // Re-throw ApiError directly, wrap others
+      if (err instanceof ApiError) throw err
+      if (err instanceof MutationQueuedError) throw err
+      lastError = err
+      throw new ApiError(
+        err instanceof Error ? err.message : 'Erro de conexão',
+        'NETWORK_ERROR',
+        0,
+      )
     }
-    throw err
   }
+
+  // All retries exhausted
+  throw lastError instanceof ApiError
+    ? lastError
+    : new ApiError(
+        lastError instanceof Error ? lastError.message : 'Servidor indisponível',
+        'MAX_RETRIES',
+        503,
+      )
 }
 
 // ─── Tipos compartilhados ───────────────────────────────────────

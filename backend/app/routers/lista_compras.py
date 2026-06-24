@@ -1,12 +1,13 @@
 import json
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.errors import NotFoundError, ValidationError
 from app.models.ingrediente import Ingrediente
 from app.models.lista_compras import ListaCompraItem, ListaSalva
 from app.schemas.lista_compras import (
@@ -67,7 +68,7 @@ async def atualizar_item(
 ):
     item = await session.get(ListaCompraItem, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item não encontrado")
+        raise NotFoundError("Item da lista de compras", item_id)
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(item, field, value)
     await session.commit()
@@ -79,7 +80,7 @@ async def atualizar_item(
 async def remover_item(item_id: int, session: AsyncSession = Depends(get_session)):
     item = await session.get(ListaCompraItem, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item não encontrado")
+        raise NotFoundError("Item da lista de compras", item_id)
     await session.delete(item)
     await session.commit()
 
@@ -152,7 +153,7 @@ async def salvar_lista(
     )
     itens = result.scalars().all()
     if not itens:
-        raise HTTPException(status_code=400, detail="Lista vazia — adicione itens antes de salvar")
+        raise ValidationError("Lista vazia — adicione itens antes de salvar")
 
     itens_data = [
         {
@@ -186,7 +187,7 @@ async def carregar_lista(
     """Copia os itens de uma lista salva para a lista atual."""
     salva = await session.get(ListaSalva, salva_id)
     if not salva:
-        raise HTTPException(status_code=404, detail="Lista salva não encontrada")
+        raise NotFoundError("Lista salva", salva_id)
 
     itens_data = salva.get_itens()
     criados = []
@@ -212,6 +213,6 @@ async def carregar_lista(
 async def deletar_salva(salva_id: int, session: AsyncSession = Depends(get_session)):
     salva = await session.get(ListaSalva, salva_id)
     if not salva:
-        raise HTTPException(status_code=404, detail="Lista salva não encontrada")
+        raise NotFoundError("Lista salva", salva_id)
     await session.delete(salva)
     await session.commit()

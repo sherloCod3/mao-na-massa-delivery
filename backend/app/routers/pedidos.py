@@ -2,12 +2,13 @@ import asyncio
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.errors import NotFoundError, ValidationError
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido, StatusPedido
 from app.models.produto import Produto
@@ -46,6 +47,9 @@ def _serialize_item(item: ItemPedido) -> dict:
 
 async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None):
     """Busca os nomes das variações e notifica (roda em BackgroundTask)."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     from app.database import async_session as _async_session
 
     try:
@@ -63,16 +67,20 @@ async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: flo
             f"  • {q}x {p_nome} ({v_nome}) — R$ {pu:.2f}"
             for _, q, pu, v_nome, p_nome in rows
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning("Erro ao buscar itens do pedido %d para notificação: %s", pedido_id, exc)
         itens_resumo = ""
 
-    await notificar_novo_pedido(
-        pedido_id=pedido_id,
-        cliente_nome=cliente_nome,
-        total=total,
-        itens_resumo=itens_resumo,
-        whatsapp=whatsapp,
-    )
+    try:
+        await notificar_novo_pedido(
+            pedido_id=pedido_id,
+            cliente_nome=cliente_nome,
+            total=total,
+            itens_resumo=itens_resumo,
+            whatsapp=whatsapp,
+        )
+    except Exception as exc:
+        logger.exception("Falha ao notificar novo pedido %d: %s", pedido_id, exc)
 
 
 @router.get("", response_model=list[PedidoResponse])
@@ -166,7 +174,7 @@ async def obter_pedido(
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+        raise NotFoundError("Pedido", pedido_id)
     return pedido
 
 
@@ -185,12 +193,12 @@ async def atualizar_status_pedido(
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+        raise NotFoundError("Pedido", pedido_id)
 
     if data.status not in [s.value for s in StatusPedido]:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Status inválido. Opções: {', '.join(s.value for s in StatusPedido)}",
+        raise ValidationError(
+            message=f"Status inválido. Opções: {', '.join(s.value for s in StatusPedido)}",
+            details={"recebido": data.status, "opcoes": [s.value for s in StatusPedido]},
         )
 
     pedido.status = data.status
@@ -225,6 +233,6 @@ async def cancelar_pedido(
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+        raise NotFoundError("Pedido", pedido_id)
     pedido.status = StatusPedido.cancelado.value
     await session.commit()
