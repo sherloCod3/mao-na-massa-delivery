@@ -87,6 +87,37 @@ export interface DashboardHoje {
   pedidos_por_status: Record<string, number>
 }
 
+export interface DashboardPeriodo {
+  total_pedidos: number
+  total_faturado: number
+  total_custos: number
+  total_lucro: number
+  ticket_medio: number
+}
+
+export interface MesItem {
+  mes: string
+  faturamento: number
+  custos: number
+  lucro: number
+  total_pedidos: number
+}
+
+export interface DashboardMensal {
+  meses: MesItem[]
+}
+
+export interface ProdutoMaisVendido {
+  produto_nome: string
+  variacao_nome: string
+  quantidade: number
+  total_faturado: number
+}
+
+export interface DashboardTopProdutos {
+  produtos: ProdutoMaisVendido[]
+}
+
 // ─── Lista de Compras ─────────────────────────────────────────────
 
 export interface ListaCompraItem {
@@ -163,6 +194,15 @@ export const trackingApi = {
 
 export const dashboardApi = {
   hoje: () => request<DashboardHoje>('/dashboard/hoje'),
+  periodo: (dataInicio?: string, dataFim?: string) => {
+    const params = new URLSearchParams()
+    if (dataInicio) params.set('data_inicio', dataInicio)
+    if (dataFim) params.set('data_fim', dataFim)
+    const qs = params.toString()
+    return request<DashboardPeriodo>(`/dashboard/periodo${qs ? `?${qs}` : ''}`)
+  },
+  mensal: (meses = 6) => request<DashboardMensal>(`/dashboard/mensal?meses=${meses}`),
+  topProdutos: (limite = 10) => request<DashboardTopProdutos>(`/dashboard/top-produtos?limite=${limite}`),
 }
 
 export const listaComprasApi = {

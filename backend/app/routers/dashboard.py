@@ -9,7 +9,14 @@ from app.database import get_session
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido, StatusPedido
 from app.models.variacao import Variacao
-from app.schemas.dashboard import DashboardHojeResponse, DashboardPeriodoResponse
+from app.schemas.dashboard import (
+    DashboardHojeResponse,
+    DashboardMensalResponse,
+    DashboardPeriodoResponse,
+    DashboardTopProdutosResponse,
+    MesItem,
+    ProdutoMaisVendido,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -109,3 +116,89 @@ async def dashboard_periodo(
         total_lucro=round(total_faturado - total_custos, 2),
         ticket_medio=ticket_medio,
     )
+
+
+@router.get("/mensal", response_model=DashboardMensalResponse)
+async def dashboard_mensal(
+    meses: int = 6,
+    session: AsyncSession = Depends(get_session),
+):
+    """Monthly revenue/costs breakdown for the last N months."""
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens).selectinload(ItemPedido.variacao).selectinload(Variacao.receita),
+        )
+        .where(Pedido.status == StatusPedido.entregue.value)
+        .order_by(Pedido.created_at.asc())
+    )
+    result = await session.execute(query)
+    pedidos = result.scalars().all()
+
+    # Group by year-month
+    meses_map: dict[str, dict] = {}
+    for p in pedidos:
+        ym = p.created_at.strftime("%Y-%m")
+        if ym not in meses_map:
+            meses_map[ym] = {"faturamento": 0.0, "custos": 0.0, "total_pedidos": 0}
+        meses_map[ym]["faturamento"] += p.total
+        meses_map[ym]["custos"] += await _calcular_custo_pedido(p)
+        meses_map[ym]["total_pedidos"] += 1
+
+    # Sort and take last N months
+    sorted_meses = sorted(meses_map.keys())[-meses:]
+    items = []
+    for ym in sorted_meses:
+        d = meses_map[ym]
+        items.append(MesItem(
+            mes=ym,
+            faturamento=round(d["faturamento"], 2),
+            custos=round(d["custos"], 2),
+            lucro=round(d["faturamento"] - d["custos"], 2),
+            total_pedidos=d["total_pedidos"],
+        ))
+
+    return DashboardMensalResponse(meses=items)
+
+
+@router.get("/top-produtos", response_model=DashboardTopProdutosResponse)
+async def dashboard_top_produtos(
+    limite: int = 10,
+    session: AsyncSession = Depends(get_session),
+):
+    """Top selling products by quantity."""
+    from sqlalchemy import desc as sql_desc
+
+    query = (
+        select(ItemPedido)
+        .options(
+            selectinload(ItemPedido.variacao).selectinload(Variacao.produto),
+        )
+        .order_by(sql_desc(ItemPedido.quantidade))
+        .limit(limite)
+    )
+    result = await session.execute(query)
+    itens = result.scalars().all()
+
+    # Aggregate by variation since same variation can appear in multiple orders
+    agg: dict[str, dict] = {}
+    for item in itens:
+        v = item.variacao
+        p = v.produto
+        key = f"{p.nome}|{v.nome}"
+        if key not in agg:
+            agg[key] = {
+                "produto_nome": p.nome,
+                "variacao_nome": v.nome,
+                "quantidade": 0,
+                "total_faturado": 0.0,
+            }
+        agg[key]["quantidade"] += item.quantidade
+        agg[key]["total_faturado"] += item.subtotal
+
+    # Sort by quantity desc and take top N
+    sorted_produtos = sorted(agg.values(), key=lambda x: x["quantidade"], reverse=True)[:limite]
+
+    return DashboardTopProdutosResponse(produtos=[
+        ProdutoMaisVendido(**p) for p in sorted_produtos
+    ])

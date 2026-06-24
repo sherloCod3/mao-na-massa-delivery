@@ -17,3 +17,26 @@ class DashboardPeriodoResponse(BaseModel):
     total_custos: float = 0.0
     total_lucro: float = 0.0
     ticket_medio: float = 0.0
+
+
+class MesItem(BaseModel):
+    mes: str  # "2026-01"
+    faturamento: float = 0.0
+    custos: float = 0.0
+    lucro: float = 0.0
+    total_pedidos: int = 0
+
+
+class DashboardMensalResponse(BaseModel):
+    meses: list[MesItem] = []
+
+
+class ProdutoMaisVendido(BaseModel):
+    produto_nome: str
+    variacao_nome: str
+    quantidade: int = 0
+    total_faturado: float = 0.0
+
+
+class DashboardTopProdutosResponse(BaseModel):
+    produtos: list[ProdutoMaisVendido] = []
