@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   ShoppingBag, DollarSign, TrendingUp, Clock, TrendingDown, PiggyBank,
-  BarChart3, Medal, CalendarDays, Download,
+  BarChart3, Medal, CalendarDays, Download, AlertTriangle, Package,
 } from 'lucide-react'
-import { obterDashboardHojeOffline } from '../services/offlineClient'
+import { obterDashboardHojeOffline, listarIngredientesOffline } from '../services/offlineClient'
 import { dashboardApi } from '../api/client'
-import type { DashboardHoje, DashboardMensal, DashboardPeriodo, DashboardTopProdutos } from '../api/client'
+import type { DashboardHoje, DashboardMensal, DashboardPeriodo, DashboardTopProdutos, Ingrediente } from '../api/client'
 import MensalChart from '../components/MensalChart'
 import TopProdutos from '../components/TopProdutos'
 import { exportCSV } from '../utils/csv'
@@ -18,6 +18,9 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl mb-6">Dashboard</h1>
+
+      {/* Estoque baixo - aparece em todas as tabs */}
+      <EstoqueBaixoAlert />
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 border shadow-sm">
@@ -44,6 +47,47 @@ export default function Dashboard() {
       {tab === 'hoje' && <DashboardHojeView />}
       {tab === 'mensal' && <DashboardMensalView />}
       {tab === 'produtos' && <DashboardProdutosView />}
+    </div>
+  )
+}
+
+// ─── Alerta de Estoque Baixo ──────────────────────────────────
+
+function EstoqueBaixoAlert() {
+  const [itens, setItens] = useState<Ingrediente[]>([])
+
+  useEffect(() => {
+    listarIngredientesOffline().then(setItens)
+  }, [])
+
+  const baixo = itens.filter(i => i.ativo && i.estoque_baixo)
+
+  if (baixo.length === 0) return null
+
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+      <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <p className="font-medium text-red-800 text-sm">
+            <strong>{baixo.length}</strong> ingrediente{baixo.length > 1 ? 's' : ''} com estoque baixo
+          </p>
+          <a href="/ingredientes" className="text-xs text-red-700 hover:text-red-900 underline">
+            Gerenciar
+          </a>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {baixo.slice(0, 5).map(i => (
+            <span key={i.id} className="inline-flex items-center gap-1 bg-white rounded-lg px-2.5 py-1 text-xs text-red-700 border border-red-100 shadow-sm">
+              <Package className="w-3 h-3" />
+              {i.nome}: <strong>{i.quantidade_estoque}</strong>/{i.estoque_minimo} {i.unidade_medida}
+            </span>
+          ))}
+          {baixo.length > 5 && (
+            <span className="text-xs text-red-500 self-center">+{baixo.length - 5} mais</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

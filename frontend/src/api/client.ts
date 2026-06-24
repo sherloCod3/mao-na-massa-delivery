@@ -57,6 +57,9 @@ export interface Ingrediente {
   unidade_medida: string
   preco_atual: number
   embalagem: number
+  quantidade_estoque: number
+  estoque_minimo: number
+  estoque_baixo: boolean
   ativo: boolean
   created_at: string
 }

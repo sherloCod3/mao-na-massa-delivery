@@ -14,6 +14,8 @@ class Ingrediente(Base):
     unidade_medida: Mapped[str] = mapped_column(String(20), nullable=False)  # g, ml, un
     preco_atual: Mapped[float] = mapped_column(Float, default=0.0)
     embalagem: Mapped[float] = mapped_column(Float, default=1.0)  # ex: 1000 se preco for por kg e unidade for g
+    quantidade_estoque: Mapped[float] = mapped_column(Float, default=0.0)  # estoque atual na unidade do ingrediente
+    estoque_minimo: Mapped[float] = mapped_column(Float, default=0.0)  # nível mínimo antes de alertar
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
@@ -21,5 +23,9 @@ class Ingrediente(Base):
     # relationships
     receitas: Mapped[list["ReceitaItem"]] = relationship(back_populates="ingrediente")
 
+    @property
+    def estoque_baixo(self) -> bool:
+        return self.ativo and self.quantidade_estoque <= self.estoque_minimo
+
     def __repr__(self) -> str:
-        return f"<Ingrediente {self.id}: {self.nome}>"
+        return f"<Ingrediente {self.id}: {self.nome} (estoque: {self.quantidade_estoque}/{self.estoque_minimo})>"

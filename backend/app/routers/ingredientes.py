@@ -70,7 +70,12 @@ async def atualizar_ingrediente(
     await session.refresh(ingrediente)
 
     # Verificar estoque baixo (fire-and-forget)
-    background_tasks.add_task(_verificar_estoque_baixo, ingrediente.id, ingrediente.nome, ingrediente.preco_atual, ingrediente.embalagem, ingrediente.ativo)
+    background_tasks.add_task(
+        _verificar_estoque_baixo,
+        ingrediente.id, ingrediente.nome,
+        ingrediente.quantidade_estoque, ingrediente.estoque_minimo,
+        ingrediente.ativo,
+    )
 
     return ingrediente
 
@@ -90,28 +95,16 @@ async def desativar_ingrediente(
 async def _verificar_estoque_baixo(
     ingrediente_id: int,
     nome: str,
-    preco_atual: float,
-    embalagem: float,
+    quantidade_estoque: float,
+    estoque_minimo: float,
     ativo: bool,
 ):
-    """Verifica se o ingrediente está com estoque baixo e notifica (roda em BackgroundTask)."""
-    if not ativo:
+    """Verifica se o ingrediente está com estoque baixo e notifica (roda em BackgroundTask).
+
+    Usa os campos reais de estoque definidos pelo usuário.
+    """
+    if not ativo or estoque_minimo <= 0:
         return
 
-    from app.database import async_session as _async_session
-
-    try:
-        async with _async_session() as s:
-            count_query = (
-                select(func.count(ReceitaItem.id))
-                .where(ReceitaItem.ingrediente_id == ingrediente_id)
-            )
-            result = await s.execute(count_query)
-            receita_count = result.scalar() or 0
-    except Exception:
-        receita_count = 0
-
-    if preco_atual >= settings.estoque_minimo_preco and receita_count >= 2:
-        await notificar_estoque_baixo(nome, ingrediente_id)
-    elif embalagem < settings.estoque_minimo and receita_count >= 1:
+    if quantidade_estoque <= estoque_minimo:
         await notificar_estoque_baixo(nome, ingrediente_id)
