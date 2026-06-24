@@ -1,5 +1,91 @@
 @import "tailwindcss";
 
+/* ─── Theme tokens ───────────────────────────────────────────────
+ * Todas as cores são definidas como CSS custom properties no :root.
+ * O tema dark (.dark) sobrescreve apenas as que mudam.
+ * O @theme block mapeia essas vars para classes Tailwind (bg-massa-50, etc.).
+ */
+
+:root {
+  /* Massa (terracota) — identidade visual */
+  --massa-50: #fdf3ef;
+  --massa-100: #fae1d8;
+  --massa-200: #f5c2b0;
+  --massa-300: #ef9d82;
+  --massa-400: #e87a58;
+  --massa-500: #c73e1d;
+  --massa-600: #a83418;
+  --massa-700: #8a2b14;
+  --massa-800: #6b210f;
+  --massa-900: #4d170b;
+
+  /* Creme (neutros quentes) */
+  --creme-50: #fefbf7;
+  --creme-100: #fdf6ee;
+  --creme-200: #faeddc;
+  --creme-300: #f5dbb8;
+
+  /* Cores semânticas */
+  --bg-body: var(--creme-50);
+  --bg-card: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --text-primary: #2d1810;
+  --text-secondary: #4a3728;
+  --text-muted: #8a7a6a;
+  --border-card: rgba(199, 62, 29, 0.06);
+  --shadow-card: 0 4px 20px -8px rgba(199, 62, 29, 0.08);
+  --noise-opacity: 0.02;
+}
+
+.dark {
+  --massa-50: #1a1210;
+  --massa-100: #2a1d18;
+  --massa-200: #3d2a22;
+  --massa-300: #5a3d32;
+  --massa-400: #8a4a35;
+  --massa-500: #c73e1d;
+  --massa-600: #d85a3a;
+  --massa-700: #e87a58;
+  --massa-800: #f09d82;
+  --massa-900: #f5c2b0;
+
+  --creme-50: #1a1412;
+  --creme-100: #231c18;
+  --creme-200: #2d2420;
+  --creme-300: #3d3028;
+
+  --bg-body: #0f0b09;
+  --bg-card: #1a1412;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --text-primary: #f0e8e0;
+  --text-secondary: #d4c8bd;
+  --text-muted: #8a7a6a;
+  --border-card: rgba(199, 62, 29, 0.12);
+  --shadow-card: 0 4px 20px -8px rgba(0, 0, 0, 0.3);
+  --noise-opacity: 0.03;
+}
+
+@theme {
+  --color-massa-50: var(--massa-50);
+  --color-massa-100: var(--massa-100);
+  --color-massa-200: var(--massa-200);
+  --color-massa-300: var(--massa-300);
+  --color-massa-400: var(--massa-400);
+  --color-massa-500: var(--massa-500);
+  --color-massa-600: var(--massa-600);
+  --color-massa-700: var(--massa-700);
+  --color-massa-800: var(--massa-800);
+  --color-massa-900: var(--massa-900);
+
+  --color-creme-50: var(--creme-50);
+  --color-creme-100: var(--creme-100);
+  --color-creme-200: var(--creme-200);
+  --color-creme-300: var(--creme-300);
+
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
 @layer utilities {
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -9,167 +95,140 @@
   }
 }
 
-@theme {
-  /* Terracota palette — warmer, more handmade than Tailwind red */
-  --color-massa-50: #fdf3ef;
-  --color-massa-100: #fae1d8;
-  --color-massa-200: #f5c2b0;
-  --color-massa-300: #ef9d82;
-  --color-massa-400: #e87a58;
-  --color-massa-500: #c73e1d;
-  --color-massa-600: #a83418;
-  --color-massa-700: #8a2b14;
-  --color-massa-800: #6b210f;
-  --color-massa-900: #4d170b;
-
-  /* Warm neutrals */
-  --color-creme-50: #fefbf7;
-  --color-creme-100: #fdf6ee;
-  --color-creme-200: #faeddc;
-  --color-creme-300: #f5dbb8;
-
-  /* Fonts */
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-}
-
 /* ─── Base ────────────────────────────────────────────────────── */
 
-html {
-  scroll-behavior: smooth;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
+    min-height: 100dvh;
+    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Subtle noise texture overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    opacity: var(--noise-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  /* Ensure content sits above noise */
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  a {
+    color: var(--massa-600);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--massa-500);
+  }
+
+  ::selection {
+    background-color: rgba(199, 62, 29, 0.15);
+    color: var(--text-primary);
+  }
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: var(--color-creme-50);
-  color: #4a3728;
-  min-height: 100dvh;
-  position: relative;
-}
+/* ─── Components ──────────────────────────────────────────────── */
 
-/* Subtle noise texture overlay */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  opacity: 0.02;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-  pointer-events: none;
-  z-index: 0;
-}
+@layer components {
+  .card {
+    background-color: var(--bg-card);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-card);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
 
-/* Ensure content sits above noise */
-#root {
-  position: relative;
-  z-index: 1;
-}
+  .card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
 
-/* ─── Typography ───────────────────────────────────────────────── */
+  .card-hover:hover {
+    box-shadow: 0 8px 32px -12px rgba(199, 62, 29, 0.15);
+    transform: translateY(-1px);
+  }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
-  font-weight: 700;
-  color: #2d1810;
-}
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+  }
 
-/* ─── Card Patterns ────────────────────────────────────────────── */
+  .btn:active {
+    transform: scale(0.98);
+  }
 
-.card {
-  background-color: #ffffff;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 20px -8px rgba(199, 62, 29, 0.08);
-  border: 1px solid rgba(199, 62, 29, 0.06);
-}
+  .btn-primary {
+    background-color: var(--massa-500);
+    color: white;
+  }
 
-.card-hover {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
+  .btn-primary:hover {
+    background-color: var(--massa-600);
+  }
 
-.card-hover:hover {
-  box-shadow: 0 8px 32px -12px rgba(199, 62, 29, 0.15);
-  transform: translateY(-1px);
-}
+  .btn-secondary {
+    background-color: var(--bg-card);
+    color: var(--massa-700);
+    border: 1px solid var(--massa-200);
+  }
 
-/* ─── Button Patterns ──────────────────────────────────────────── */
+  .btn-secondary:hover {
+    background-color: var(--massa-50);
+  }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.2s ease, transform 0.15s ease;
-  cursor: pointer;
-}
+  .input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--massa-200);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-card);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+  }
 
-.btn:active {
-  transform: scale(0.98);
-}
+  .input:focus {
+    border-color: var(--massa-500);
+    box-shadow: 0 0 0 3px rgba(199, 62, 29, 0.1);
+  }
 
-.btn-primary {
-  background-color: var(--color-massa-500);
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: var(--color-massa-600);
-}
-
-.btn-secondary {
-  background-color: white;
-  color: var(--color-massa-700);
-  border: 1px solid var(--color-massa-200);
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-massa-50);
-}
-
-/* ─── Input & Form Patterns ────────────────────────────────────── */
-
-.input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e5d9d0;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  color: #4a3728;
-  background-color: white;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  outline: none;
-}
-
-.input:focus {
-  border-color: var(--color-massa-500);
-  box-shadow: 0 0 0 3px rgba(199, 62, 29, 0.1);
-}
-
-.input::placeholder {
-  color: #c4b5a5;
-}
-
-/* ─── Links ────────────────────────────────────────────────────── */
-
-a {
-  color: var(--color-massa-600);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-a:hover {
-  color: var(--color-massa-500);
-}
-
-/* ─── Selection ────────────────────────────────────────────────── */
-
-::selection {
-  background-color: rgba(199, 62, 29, 0.15);
-  color: #2d1810;
+  .input::placeholder {
+    color: var(--text-muted);
+  }
 }
 
 /* ─── Animations ────────────────────────────────────────────── */
