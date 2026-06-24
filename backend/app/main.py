@@ -11,6 +11,7 @@ from app.routers import (
     dashboard_router,
     ingredientes_router,
     lista_compras_router,
+    notificacoes_router,
     pedidos_router,
     produtos_router,
     publico_router,
@@ -63,6 +64,7 @@ app.include_router(pedidos_router, prefix="/api/v1")
 app.include_router(publico_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(lista_compras_router, prefix="/api/v1")
+app.include_router(notificacoes_router, prefix="/api/v1")
 
 
 @app.get("/")

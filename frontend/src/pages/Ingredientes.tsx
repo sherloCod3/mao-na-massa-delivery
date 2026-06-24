@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline } from '../services/offlineClient'
+import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Ingrediente } from '../api/client'
 
@@ -29,8 +30,9 @@ export default function Ingredientes() {
       setEditId(null)
       setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000 })
       load()
-    } catch {
-      toast('error', 'Erro ao salvar ingrediente')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao salvar ingrediente'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -46,8 +48,9 @@ export default function Ingredientes() {
         await desativarIngredienteOffline(id)
         toast('success', 'Ingrediente desativado')
         load()
-      } catch {
-        toast('error', 'Erro ao desativar ingrediente')
+      } catch (err) {
+        const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao desativar ingrediente'
+        toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
       }
     }
   }

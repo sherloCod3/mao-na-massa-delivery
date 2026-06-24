@@ -5,6 +5,7 @@ from app.routers.pedidos import router as pedidos_router
 from app.routers.publico import router as publico_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.lista_compras import router as lista_compras_router
+from app.routers.notificacoes import router as notificacoes_router
 
 __all__ = [
     "ingredientes_router",
@@ -14,4 +15,5 @@ __all__ = [
     "publico_router",
     "dashboard_router",
     "lista_compras_router",
+    "notificacoes_router",
 ]

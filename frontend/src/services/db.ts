@@ -1,10 +1,24 @@
 import Dexie, { type Table } from 'dexie'
-import type { DashboardHoje, Ingrediente, ListaCompraItem, ListaCompraResumo, Pedido, Produto, ReceitaItem, Variacao, CustoVariacao } from '../api/client'
+import type {
+  DashboardHoje, Ingrediente, ListaCompraItem, ListaCompraResumo,
+  Pedido, Produto, ReceitaItem, Variacao, CustoVariacao,
+} from '../api/client'
 
 export interface CachedResponse<T> {
   key: string
   data: T
   updatedAt: number
+}
+
+export interface QueuedMutation {
+  id?: number
+  method: string        // POST | PUT | DELETE
+  endpoint: string      // e.g. '/ingredientes' or '/ingredientes/5'
+  body?: unknown
+  entityType: string    // for cache invalidation after sync
+  createdAt: number
+  retryCount: number
+  lastError?: string
 }
 
 class MaoNaMassaDB extends Dexie {
@@ -18,6 +32,7 @@ class MaoNaMassaDB extends Dexie {
   variacoes!: Table<CachedResponse<Variacao[]>>
   receitaItems!: Table<CachedResponse<ReceitaItem[]>>
   custoVariacao!: Table<CachedResponse<CustoVariacao>>
+  filaMutacoes!: Table<QueuedMutation>
 
   constructor() {
     super('MaoNaMassaDB')
@@ -33,6 +48,9 @@ class MaoNaMassaDB extends Dexie {
       receitaItems: 'key',
       custoVariacao: 'key',
     })
+    this.version(2).stores({
+      filaMutacoes: '++id, createdAt, entityType',
+    })
   }
 }
 
@@ -43,7 +61,6 @@ export async function getCachedOrFetch<T>(
   key: string,
   fetcher: () => Promise<T>,
 ): Promise<T> {
-  // Try network first, fall back to IndexedDB cache when offline
   try {
     const data = await fetcher()
     await table.put({ key, data, updatedAt: Date.now() })
@@ -65,5 +82,5 @@ export async function invalidateCache(...tables: AnyTable[]): Promise<void> {
 }
 
 export async function invalidateAllCache(): Promise<void> {
-  await Promise.all(db.tables.map(t => t.clear()))
+  await Promise.all(db.tables.filter(t => t.name !== 'filaMutacoes').map(t => t.clear()))
 }

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Copy } from 'lucide-react'
 import { pedidosApi } from '../api/client'
 import { obterPedidoDetalheOffline } from '../services/offlineClient'
+import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Pedido } from '../api/client'
 
@@ -47,8 +48,9 @@ export default function PedidoDetalhe() {
         const updated = await pedidosApi.atualizarStatus(pedido.id, statusFlow[nextIdx])
         setPedido(updated)
         toast('success', `Status atualizado para "${statusLabels[statusFlow[nextIdx]].replace(/^.{2} /, '')}"`)
-      } catch {
-        toast('error', 'Erro ao atualizar status')
+      } catch (err) {
+        const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao atualizar status'
+        toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
       }
     }
   }

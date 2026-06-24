@@ -6,6 +6,7 @@ from app.models.receita_item import ReceitaItem
 from app.models.pedido import Pedido, StatusPedido
 from app.models.item_pedido import ItemPedido
 from app.models.lista_compras import ListaCompraItem, ListaSalva
+from app.models.notificacao import Notificacao
 
 __all__ = [
     "Ingrediente",
@@ -17,4 +18,5 @@ __all__ = [
     "ItemPedido",
     "ListaCompraItem",
     "ListaSalva",
+    "Notificacao",
 ]

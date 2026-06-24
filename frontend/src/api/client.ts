@@ -1,16 +1,52 @@
+import { enfileirarMutacao, MutationQueuedError } from '../services/mutationQueue'
+
+// ─── Notificações ────────────────────────────────────────────────
+
+export interface Notificacao {
+  id: number
+  tipo: string
+  titulo: string
+  mensagem: string
+  referencia_tipo: string | null
+  referencia_id: number | null
+  lida: boolean
+  created_at: string
+}
+
+export interface NotificacaoResponse {
+  total: number
+  notificacoes: Notificacao[]
+}
+
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => 'Erro desconhecido')
-    throw new Error(`HTTP ${res.status}: ${text}`)
+  try {
+    const res = await fetch(`${API_BASE}${url}`, {
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      ...options,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'Erro desconhecido')
+      throw new Error(`HTTP ${res.status}: ${text}`)
+    }
+    if (res.status === 204) return undefined as T
+    return res.json()
+  } catch (err) {
+    // When offline and this is a write operation (POST/PUT/DELETE), queue it
+    const method = options?.method || 'GET'
+    if (!navigator.onLine && method !== 'GET') {
+      const body = options?.body ? JSON.parse(options.body as string) : undefined
+      await enfileirarMutacao({
+        method,
+        endpoint: url,
+        body,
+        entityType: url.split('/')[1] || 'unknown',
+      })
+      throw new MutationQueuedError()
+    }
+    throw err
   }
-  if (res.status === 204) return undefined as T
-  return res.json()
 }
 
 // ─── Tipos compartilhados ───────────────────────────────────────
@@ -180,9 +216,22 @@ export const variacoesApi = {
   custo: (variacaoId: number) => request<CustoVariacao>(`/variacoes/${variacaoId}/custo`),
 }
 
+export interface PedidoPayload {
+  cliente_nome: string
+  cliente_whatsapp?: string | null
+  forma_pagamento?: string
+  observacoes?: string | null
+  itens: {
+    variacao_id: number
+    quantidade: number
+    preco_unitario: number
+    customizacoes?: { nome: string; preco: number }[]
+  }[]
+}
+
 export const pedidosApi = {
   listar: () => request<Pedido[]>('/pedidos'),
-  criar: (data: any) => request<Pedido>('/pedidos', { method: 'POST', body: JSON.stringify(data) }),
+  criar: (data: PedidoPayload) => request<Pedido>('/pedidos', { method: 'POST', body: JSON.stringify(data) }),
   obter: (id: number) => request<Pedido>(`/pedidos/${id}`),
   atualizarStatus: (id: number, status: string) =>
     request<Pedido>(`/pedidos/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
@@ -203,6 +252,15 @@ export const dashboardApi = {
   },
   mensal: (meses = 6) => request<DashboardMensal>(`/dashboard/mensal?meses=${meses}`),
   topProdutos: (limite = 10) => request<DashboardTopProdutos>(`/dashboard/top-produtos?limite=${limite}`),
+}
+
+export const notificacoesApi = {
+  listar: (apenasNaoLidas = true) =>
+    request<NotificacaoResponse>(`/notificacoes?apenas_nao_lidas=${apenasNaoLidas}`),
+  marcarLida: (id: number) =>
+    request<{ ok: boolean }>(`/notificacoes/${id}/ler`, { method: 'POST' }),
+  marcarTodasLidas: () =>
+    request<{ ok: boolean }>('/notificacoes/ler-todas', { method: 'POST' }),
 }
 
 export const listaComprasApi = {

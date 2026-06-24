@@ -131,12 +131,13 @@ function DashboardHojeView() {
 
 function DashboardMensalView() {
   const [data, setData] = useState<DashboardMensal | null>(null)
+  const [erro, setErro] = useState('')
   const [periodo, setPeriodo] = useState<DashboardPeriodo | null>(null)
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
 
   useEffect(() => {
-    dashboardApi.mensal(12).then(setData).catch(console.error)
+    dashboardApi.mensal(12).then(setData).catch(() => setErro('Erro ao carregar dados mensais'))
   }, [])
 
   const buscarPeriodo = async () => {
@@ -144,8 +145,8 @@ function DashboardMensalView() {
     try {
       const res = await dashboardApi.periodo(dataInicio || undefined, dataFim || undefined)
       setPeriodo(res)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setErro('Erro ao buscar relatório do período')
     }
   }
 
@@ -170,7 +171,12 @@ function DashboardMensalView() {
             </button>
           ) : null}
         </div>
-        <MensalChart data={data?.meses ?? []} />
+        {erro && <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-4">{erro}</div>}
+        {!data && !erro ? (
+          <div className="flex items-center justify-center h-48"><Clock className="w-6 h-6 text-massa-300 animate-spin" /></div>
+        ) : (
+          <MensalChart data={data?.meses ?? []} />
+        )}
       </div>
 
       {/* Consulta por Período */}
@@ -227,9 +233,10 @@ function DashboardMensalView() {
 
 function DashboardProdutosView() {
   const [data, setData] = useState<DashboardTopProdutos | null>(null)
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
-    dashboardApi.topProdutos(15).then(setData).catch(console.error)
+    dashboardApi.topProdutos(15).then(setData).catch(() => setErro('Erro ao carregar top produtos'))
   }, [])
 
   const exportarProdutos = () => {
@@ -251,7 +258,12 @@ function DashboardProdutosView() {
           </button>
         ) : null}
       </div>
-      <TopProdutos data={data?.produtos ?? []} />
+      {erro && <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-4">{erro}</div>}
+      {!data && !erro ? (
+        <div className="flex items-center justify-center h-48"><Clock className="w-6 h-6 text-massa-300 animate-spin" /></div>
+      ) : (
+        <TopProdutos data={data?.produtos ?? []} />
+      )}
     </div>
   )
 }

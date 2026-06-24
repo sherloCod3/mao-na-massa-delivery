@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { listaComprasApi } from '../api/client'
 import { listarComprasOffline, obterResumoComprasOffline } from '../services/offlineClient'
+import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { ListaCompraItem, ListaCompraResumo, ListaSalvaResumo } from '../api/client'
 
@@ -58,8 +59,9 @@ export default function ListaCompras() {
       setNovoValor('')
       setNovoQtd('1')
       await carregar()
-    } catch {
-      toast('error', 'Erro ao adicionar item')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao adicionar item'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -67,8 +69,9 @@ export default function ListaCompras() {
     try {
       await listaComprasApi.atualizar(item.id, { comprado: !item.comprado })
       await carregar()
-    } catch {
-      toast('error', 'Erro ao atualizar item')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao atualizar item'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -78,8 +81,9 @@ export default function ListaCompras() {
     try {
       await listaComprasApi.atualizar(item.id, { valor_estimado: v })
       await carregar()
-    } catch {
-      toast('error', 'Erro ao atualizar valor')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao atualizar valor'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -88,8 +92,9 @@ export default function ListaCompras() {
       await listaComprasApi.remover(id)
       toast('success', 'Item removido')
       await carregar()
-    } catch {
-      toast('error', 'Erro ao remover item')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao remover item'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -98,8 +103,9 @@ export default function ListaCompras() {
       await listaComprasApi.limparComprados()
       toast('success', 'Itens comprados removidos!')
       await carregar()
-    } catch {
-      toast('error', 'Erro ao limpar itens')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao limpar itens'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -111,8 +117,9 @@ export default function ListaCompras() {
       setNomeSalvar('')
       setShowSalvarModal(false)
       await carregar()
-    } catch {
-      toast('error', 'Erro ao salvar lista')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao salvar lista'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -122,8 +129,9 @@ export default function ListaCompras() {
       toast('success', 'Lista carregada!')
       setShowSalvas(false)
       await carregar()
-    } catch {
-      toast('error', 'Erro ao carregar lista')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao carregar lista'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -132,8 +140,9 @@ export default function ListaCompras() {
       await listaComprasApi.deletarSalva(id)
       toast('success', 'Lista removida')
       await carregar()
-    } catch {
-      toast('error', 'Erro ao remover lista')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao remover lista'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 

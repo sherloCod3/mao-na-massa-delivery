@@ -39,7 +39,7 @@ export async function listarProdutosOffline() {
   return getCachedOrFetch(db.produtos, 'all', () => produtosApi.listar())
 }
 
-// ─── Variacoes ────────────────────────────────────────────────
+// ─── Variacoes ───────────────────────────────────────────────
 
 export async function listarVariacoesOffline(produtoId: number) {
   const key = `produto_${produtoId}`

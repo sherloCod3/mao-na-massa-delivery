@@ -10,5 +10,16 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./mao-na-massa.db"
     cors_origins: str = "http://localhost:5173"
 
+    # ─── Telegram ────────────────────────────────────────────
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
+    # ─── Estoque ─────────────────────────────────────────────
+    estoque_minimo: float = 100.0
+    estoque_minimo_preco: float = 30.0
+
+    # ─── App (para links nas notificações) ───────────────────
+    app_url: str = "http://localhost:5173"
+
 
 settings = Settings()

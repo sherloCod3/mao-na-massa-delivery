@@ -1,7 +1,8 @@
+import asyncio
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_session
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido, StatusPedido
+from app.models.produto import Produto
 from app.models.receita_item import ReceitaItem
 from app.models.variacao import Variacao
 from app.schemas.pedido import (
@@ -18,6 +20,7 @@ from app.schemas.pedido import (
     PedidoTrackingResponse,
     PedidoUpdateStatus,
 )
+from app.services.notificador import notificar_novo_pedido, notificar_status_pedido
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
@@ -39,6 +42,37 @@ def _serialize_item(item: ItemPedido) -> dict:
         "customizacoes": item.customizacoes,
         "subtotal": item.subtotal,
     }
+
+
+async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None):
+    """Busca os nomes das variações e notifica (roda em BackgroundTask)."""
+    from app.database import async_session as _async_session
+
+    try:
+        async with _async_session() as s:
+            query = (
+                select(ItemPedido.variacao_id, ItemPedido.quantidade, ItemPedido.preco_unitario, Variacao.nome, Produto.nome)
+                .join(Variacao, ItemPedido.variacao_id == Variacao.id)
+                .join(Produto, Variacao.produto_id == Produto.id)
+                .where(ItemPedido.pedido_id == pedido_id)
+            )
+            result = await s.execute(query)
+            rows = result.all()
+
+        itens_resumo = "\n".join(
+            f"  • {q}x {p_nome} ({v_nome}) — R$ {pu:.2f}"
+            for _, q, pu, v_nome, p_nome in rows
+        )
+    except Exception:
+        itens_resumo = ""
+
+    await notificar_novo_pedido(
+        pedido_id=pedido_id,
+        cliente_nome=cliente_nome,
+        total=total,
+        itens_resumo=itens_resumo,
+        whatsapp=whatsapp,
+    )
 
 
 @router.get("", response_model=list[PedidoResponse])
@@ -68,6 +102,7 @@ async def listar_pedidos(
 @router.post("", response_model=PedidoResponse, status_code=status.HTTP_201_CREATED)
 async def criar_pedido(
     data: PedidoCreate,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
 ):
     total = _calcular_subtotal(data.itens)
@@ -108,6 +143,13 @@ async def criar_pedido(
     )
     result = await session.execute(query)
     pedido = result.scalar_one()
+
+    # Notificar admin sobre novo pedido (fire-and-forget via BackgroundTasks)
+    background_tasks.add_task(
+        _notificar_pedido_criado, pedido.id, pedido.cliente_nome,
+        pedido.total, pedido.cliente_whatsapp
+    )
+
     return pedido
 
 
@@ -132,6 +174,7 @@ async def obter_pedido(
 async def atualizar_status_pedido(
     pedido_id: int,
     data: PedidoUpdateStatus,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
 ):
     query = (
@@ -155,6 +198,16 @@ async def atualizar_status_pedido(
     # Re-fetch after commit
     result = await session.execute(query)
     pedido = result.scalar_one()
+
+    # Notificar admin sobre mudança de status (fire-and-forget)
+    background_tasks.add_task(
+        notificar_status_pedido,
+        pedido_id=pedido.id,
+        cliente_nome=pedido.cliente_nome,
+        status_novo=pedido.status,
+        total=pedido.total,
+    )
+
     return pedido
 
 

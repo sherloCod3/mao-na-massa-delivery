@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { pedidosApi } from '../api/client'
 import { listarProdutosOffline } from '../services/offlineClient'
+import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Produto, Variacao } from '../api/client'
 
@@ -52,8 +53,10 @@ export default function PedidoNovo() {
       })
       toast('success', 'Pedido criado com sucesso!')
       navigate('/pedidos')
-    } catch {
-      toast('error', 'Erro ao criar pedido')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao criar pedido'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
+      if (err instanceof MutationQueuedError) navigate('/pedidos')
     }
   }
 

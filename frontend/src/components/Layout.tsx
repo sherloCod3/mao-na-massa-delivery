@@ -1,8 +1,12 @@
+import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { CookingPot, Home, ShoppingBag, Package, ClipboardList, ShoppingCart } from 'lucide-react'
 import OnlineStatus from './OnlineStatus'
 import PwaInstallPrompt from './PwaInstallPrompt'
+import SyncStatus from './SyncStatus'
+import NotificationBell from './NotificationBell'
 import { ToastProvider } from './Toast'
+import { inicializarSincronizacao } from '../services/mutationQueue'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
@@ -13,6 +17,10 @@ const navItems = [
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    inicializarSincronizacao()
+  }, [])
+
   return (
     <ToastProvider>
     <div className="flex h-screen">
@@ -45,6 +53,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {item.label}
             </NavLink>
           ))}
+          <div className="pt-2 px-1">
+            <NotificationBell />
+          </div>
         </nav>
         <div className="p-4 border-t border-massa-700 text-xs text-massa-400">
           Mão na Massa v0.1
@@ -63,6 +74,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Offline indicator */}
       <OnlineStatus />
+
+      {/* Sync pending indicator */}
+      <SyncStatus />
     </div>
     </ToastProvider>
   )

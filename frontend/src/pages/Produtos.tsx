@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { variacoesApi } from '../api/client'
 import { listarProdutosOffline, listarIngredientesOffline, obterReceitaOffline, obterCustoOffline } from '../services/offlineClient'
+import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
-import type { Produto, Ingrediente, CustoVariacao } from '../api/client'
+import type { Produto, Ingrediente, ReceitaItem, CustoVariacao } from '../api/client'
 
 export default function Produtos() {
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -84,8 +85,9 @@ function VariacaoForm({ produtoId, onClose, onSave }: { produtoId: number; onClo
       toast('success', 'Variação criada!')
       onSave()
       onClose()
-    } catch {
-      toast('error', 'Erro ao criar variação')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao criar variação'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
@@ -126,7 +128,7 @@ function VariacaoForm({ produtoId, onClose, onSave }: { produtoId: number; onClo
 function ReceitaForm({ variacaoId, nome, ingredientes, onClose, onSave }: {
   variacaoId: number; nome: string; ingredientes: Ingrediente[]; onClose: () => void; onSave: () => void
 }) {
-  const [receita, setReceita] = useState<any[]>([])
+  const [receita, setReceita] = useState<ReceitaItem[]>([])
   const [custo, setCusto] = useState<CustoVariacao | null>(null)
   const [addIngrediente, setAddIngrediente] = useState({ ingrediente_id: 0, quantidade: 0 })
   const { toast } = useToast()
@@ -149,8 +151,9 @@ function ReceitaForm({ variacaoId, nome, ingredientes, onClose, onSave }: {
       setAddIngrediente({ ingrediente_id: 0, quantidade: 0 })
       load()
       onSave()
-    } catch {
-      toast('error', 'Erro ao adicionar ingrediente')
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao adicionar ingrediente'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
     }
   }
 
