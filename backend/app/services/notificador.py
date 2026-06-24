@@ -4,11 +4,39 @@ import logging
 
 import httpx
 
+from urllib.parse import quote
+
 from app.config import settings
 from app.database import async_session
 from app.models.notificacao import Notificacao
 
 logger = logging.getLogger(__name__)
+
+# ─── WhatsApp (wa.me links) ──────────────────────────────────────
+
+
+def gerar_link_whatsapp(telefone: str, mensagem: str) -> str | None:
+    """Gera um link wa.me com mensagem pré-preenchida.
+
+    Args:
+        telefone: Número com DDD (ex: 11999999999) — sem 55.
+        mensagem: Texto livre que será URL-encoded.
+
+    Returns:
+        URL completa do wa.me ou None se telefone for inválido.
+    """
+    if not telefone:
+        return None
+    # Remove tudo que não é dígito
+    digitos = "".join(c for c in telefone if c.isdigit())
+    if len(digitos) < 10:
+        return None
+    # Adiciona 55 (Brasil) se não tiver código de país
+    if not digitos.startswith("55"):
+        digitos = f"55{digitos}"
+    texto = quote(mensagem)
+    return f"https://wa.me/{digitos}?text={texto}"
+
 
 # ─── Telegram ───────────────────────────────────────────────────
 
@@ -84,6 +112,18 @@ async def notificar_novo_pedido(
     contato = f"\n📞 Whatsapp: {whatsapp}" if whatsapp else ""
     detalhes = f"\n{itens_resumo}"
 
+    # Gerar link wa.me se tiver WhatsApp
+    link_whatsapp = None
+    if whatsapp:
+        msg_cliente = (
+            f"Olá {cliente_nome}! 🥟\n\n"
+            f"📥 Pedido #{pedido_id} recebido com sucesso!\n"
+            f"💰 Total: R$ {total:.2f}\n\n"
+            f"Em breve começaremos a preparar! 👨‍🍳\n"
+            f"Obrigado por comprar no Mão na Massa! 🎉"
+        )
+        link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente)
+
     texto_telegram = (
         f"<b>🆕 NOVO PEDIDO #{pedido_id}</b>\n"
         f"━━━━━━━━━━━━━━━━\n"
@@ -93,6 +133,9 @@ async def notificar_novo_pedido(
         f"━━━━━━━━━━━━━━━━\n"
         f"🏠 <a href='{settings.app_url}/pedidos/{pedido_id}'>Abrir no painel</a>"
     )
+
+    if link_whatsapp:
+        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>Enviar WhatsApp para {cliente_nome}</a>"
 
     await _telegram_send(texto_telegram)
     await _salvar_notificacao(
@@ -109,6 +152,7 @@ async def notificar_status_pedido(
     cliente_nome: str,
     status_novo: str,
     total: float,
+    whatsapp: str | None = None,
 ):
     """Notifica administrador sobre mudança de status do pedido."""
     emoji_map = {
@@ -124,13 +168,29 @@ async def notificar_status_pedido(
     titulo = f"{emoji} Pedido #{pedido_id} — {status_nome}"
     mensagem = f"Status do pedido de {cliente_nome} alterado para: {status_nome}"
 
+    # Gerar link wa.me se tiver WhatsApp
+    link_whatsapp = None
+    if whatsapp:
+        msg_cliente = (
+            f"Olá {cliente_nome}! 🥟\n\n"
+            f"Seu pedido #{pedido_id} está: *{status_nome}*\n"
+            f"💰 Valor: R$ {total:.2f}\n\n"
+            f"Obrigado por comprar no Mão na Massa! 🎉"
+        )
+        link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente)
+
     texto_telegram = (
         f"{emoji} <b>Pedido #{pedido_id}</b>\n"
         f"Status: <b>{status_nome}</b>\n"
         f"👤 {cliente_nome}\n"
         f"💰 R$ {total:.2f}\n"
-        f"<a href='{settings.app_url}/pedidos/{pedido_id}'>Ver no painel</a>"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"🏠 <a href='{settings.app_url}/pedidos/{pedido_id}'>Ver no painel</a>"
     )
+
+    # Adicionar link WhatsApp no Telegram se disponível
+    if link_whatsapp:
+        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>Enviar WhatsApp para {cliente_nome}</a>"
 
     await _telegram_send(texto_telegram)
     await _salvar_notificacao(

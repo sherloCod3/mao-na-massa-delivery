@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Copy } from 'lucide-react'
+import { ArrowLeft, Copy, MessageCircle } from 'lucide-react'
 import { pedidosApi } from '../api/client'
 import { obterPedidoDetalheOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
+import { gerarLinkWhatsApp, mensagemStatusPedido } from '../utils/whatsapp'
 import type { Pedido } from '../api/client'
 
 const statusLabels: Record<string, string> = {
@@ -105,10 +106,42 @@ export default function PedidoDetalhe() {
 
       {/* Dados do cliente */}
       <div className="bg-white card p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Dados do Cliente</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Dados do Cliente</h2>
+          {pedido.cliente_whatsapp && (
+            <button
+              onClick={() => {
+                const trackingUrl = `${window.location.origin}/track/${pedido.token_acesso}`
+                const msg = mensagemStatusPedido(pedido.cliente_nome, pedido.id, pedido.status, pedido.total, trackingUrl)
+                const link = gerarLinkWhatsApp(pedido.cliente_whatsapp!, msg)
+                if (link) window.open(link, '_blank')
+              }}
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Enviar WhatsApp
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div><span className="text-gray-500">Nome:</span> {pedido.cliente_nome}</div>
-          <div><span className="text-gray-500">WhatsApp:</span> {pedido.cliente_whatsapp || '-'}</div>
+          <div>
+            <span className="text-gray-500">WhatsApp:</span>{' '}
+            {pedido.cliente_whatsapp ? (
+              <span className="inline-flex items-center gap-1">
+                {pedido.cliente_whatsapp}
+                <a
+                  href={gerarLinkWhatsApp(pedido.cliente_whatsapp, '') ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-600 hover:text-green-800"
+                  title="Abrir WhatsApp"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 inline" />
+                </a>
+              </span>
+            ) : '-'}
+          </div>
           <div><span className="text-gray-500">Pagamento:</span> {pedido.forma_pagamento || '-'}</div>
           <div><span className="text-gray-500">Data:</span> {new Date(pedido.created_at).toLocaleString('pt-BR')}</div>
           {pedido.observacoes && (

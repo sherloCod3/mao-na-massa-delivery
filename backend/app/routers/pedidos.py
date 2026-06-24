@@ -206,6 +206,7 @@ async def atualizar_status_pedido(
         cliente_nome=pedido.cliente_nome,
         status_novo=pedido.status,
         total=pedido.total,
+        whatsapp=pedido.cliente_whatsapp,
     )
 
     return pedido

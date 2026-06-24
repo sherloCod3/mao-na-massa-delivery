@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, MessageCircle } from 'lucide-react'
 import { listarPedidosOffline } from '../services/offlineClient'
 import type { Pedido } from '../api/client'
 import { useNavigate } from 'react-router-dom'
+
+import { gerarLinkWhatsApp, mensagemNovoPedido } from '../utils/whatsapp'
 
 const statusLabels: Record<string, string> = {
   recebido: '📥 Recebido',
@@ -65,10 +67,25 @@ export default function Pedidos() {
                   {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => navigate(`/pedidos/${p.id}`)}
-                    className="text-blue-600 hover:text-blue-800 text-sm">
-                    <Search className="w-4 h-4 inline" /> Detalhes
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    {p.cliente_whatsapp && (
+                      <button
+                        onClick={() => {
+                          const msg = mensagemNovoPedido(p.cliente_nome, p.id, p.total)
+                          const link = gerarLinkWhatsApp(p.cliente_whatsapp!, msg)
+                          if (link) window.open(link, '_blank')
+                        }}
+                        className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                        title="Enviar WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button onClick={() => navigate(`/pedidos/${p.id}`)}
+                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                      <Search className="w-4 h-4" /> Detalhes
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
