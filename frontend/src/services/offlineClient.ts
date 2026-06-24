@@ -33,6 +33,12 @@ export async function desativarIngredienteOffline(id: number) {
   await invalidateCache(db.ingredientes)
 }
 
+export async function movimentarEstoqueOffline(id: number, data: { tipo: 'entrada' | 'saida'; quantidade: number; motivo?: string }) {
+  const result = await ingredientesApi.movimentar(id, data)
+  await invalidateCache(db.ingredientes)
+  return result
+}
+
 // ─── Produtos ────────────────────────────────────────────────
 
 export async function listarProdutosOffline() {

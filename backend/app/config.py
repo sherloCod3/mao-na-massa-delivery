@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     estoque_minimo: float = 100.0
     estoque_minimo_preco: float = 30.0
 
+    # ─── WhatsApp (Evolution API — self-hosted) ────────────
+    evolution_api_url: str = ""  # ex: http://localhost:8080
+    evolution_api_key: str = ""  # ex: mao-na-massa-key
+
     # ─── App (para links nas notificações) ───────────────────
     app_url: str = "http://localhost:5173"
 

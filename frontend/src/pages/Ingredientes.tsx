@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle, Package } from 'lucide-react'
-import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline } from '../services/offlineClient'
+import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X } from 'lucide-react'
+import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline, movimentarEstoqueOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Ingrediente } from '../api/client'
@@ -14,6 +14,9 @@ export default function Ingredientes() {
     nome: '', unidade_medida: 'g' as string,
     preco_atual: 0, embalagem: 1000,
     quantidade_estoque: 0, estoque_minimo: 0,
+  })
+  const [movForm, setMovForm] = useState<{ open: boolean; id: number; nome: string; tipo: 'entrada' | 'saida'; quantidade: number; motivo: string }>({
+    open: false, id: 0, nome: '', tipo: 'entrada', quantidade: 0, motivo: '',
   })
 
   const load = () => listarIngredientesOffline().then(setItems)
@@ -64,6 +67,26 @@ export default function Ingredientes() {
   }
 
   const unidadeLabel = (u: string) => u === 'g' ? 'Gramas (g)' : u === 'ml' ? 'Mililitros (ml)' : u === 'un' ? 'Unidade' : u
+
+  const openMovForm = (item: Ingrediente, tipo: 'entrada' | 'saida') => {
+    setMovForm({ open: true, id: item.id, nome: item.nome, tipo, quantidade: 0, motivo: '' })
+  }
+
+  const handleMovSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const result = await movimentarEstoqueOffline(movForm.id, {
+        tipo: movForm.tipo,
+        quantidade: movForm.quantidade,
+        motivo: movForm.motivo || undefined,
+      })
+      toast('success', `${movForm.tipo === 'entrada' ? 'Entrada' : 'Saída'} registrada! Saldo: ${result.saldo_posterior}`)
+      setMovForm({ open: false, id: 0, nome: '', tipo: 'entrada', quantidade: 0, motivo: '' })
+      load()
+    } catch (err) {
+      toast('error', err instanceof Error ? err.message : 'Erro ao movimentar estoque')
+    }
+  }
 
   const estoqueBaixo = items.filter(i => i.ativo && i.quantidade_estoque <= i.estoque_minimo && i.estoque_minimo > 0)
 
@@ -202,10 +225,16 @@ export default function Ingredientes() {
                     R$ {(item.preco_atual / item.embalagem).toFixed(4)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 p-1">
+                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 p-1" title="Editar">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800 p-1 ml-2">
+                    <button onClick={() => openMovForm(item, 'entrada')} title="Dar entrada" className="text-green-600 hover:text-green-800 p-1 ml-1">
+                      <Package className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => openMovForm(item, 'saida')} title="Dar saída" className="text-orange-600 hover:text-orange-800 p-1 ml-1">
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800 p-1 ml-1" title="Desativar">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -218,6 +247,59 @@ export default function Ingredientes() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal de movimentação de estoque */}
+      {movForm.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setMovForm({ ...movForm, open: false })}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                {movForm.tipo === 'entrada' ? '📦 Dar Entrada' : '📤 Dar Saída'} — {movForm.nome}
+              </h2>
+              <button onClick={() => setMovForm({ ...movForm, open: false })} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleMovSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Quantidade {movForm.tipo === 'entrada' ? 'a adicionar' : 'a remover'}
+                </label>
+                <input
+                  type="number" step="0.01" min="0" required autoFocus
+                  className="w-full border rounded-lg px-3 py-2 text-lg"
+                  value={movForm.quantidade || ''}
+                  onChange={e => setMovForm({ ...movForm, quantidade: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={movForm.motivo}
+                  onChange={e => setMovForm({ ...movForm, motivo: e.target.value })}
+                  placeholder={movForm.tipo === 'entrada' ? 'Ex: Compra do fornecedor' : 'Ex: Produção do dia'}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit"
+                  className={`flex-1 py-2 rounded-lg text-white font-medium ${
+                    movForm.tipo === 'entrada'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-orange-600 hover:bg-orange-700'
+                  }`}>
+                  Confirmar {movForm.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                </button>
+                <button type="button" onClick={() => setMovForm({ ...movForm, open: false })}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

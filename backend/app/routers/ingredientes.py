@@ -10,6 +10,8 @@ from app.schemas.ingrediente import (
     IngredienteResponse,
     IngredienteUpdate,
 )
+from app.models.movimentacao_estoque import MovimentacaoEstoque
+from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse
 from app.services.notificador import notificar_estoque_baixo
 from app.config import settings
 
@@ -90,6 +92,48 @@ async def desativar_ingrediente(
         raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
     ingrediente.ativo = False
     await session.commit()
+
+
+@router.post("/{ingrediente_id}/movimentar", response_model=MovimentacaoResponse)
+async def movimentar_estoque(
+    ingrediente_id: int,
+    data: MovimentacaoCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    """Registra entrada ou saída de estoque e atualiza o saldo do ingrediente."""
+    ingrediente = await session.get(Ingrediente, ingrediente_id)
+    if not ingrediente:
+        raise HTTPException(status_code=404, detail="Ingrediente não encontrado")
+
+    saldo_anterior = ingrediente.quantidade_estoque
+
+    if data.tipo == "entrada":
+        novo_saldo = saldo_anterior + data.quantidade
+    else:  # saida
+        if data.quantidade > saldo_anterior:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Estoque insuficiente. Disponível: {saldo_anterior:.2f},"
+                    f" solicitado: {data.quantidade:.2f}"
+                ),
+            )
+        novo_saldo = saldo_anterior - data.quantidade
+
+    mov = MovimentacaoEstoque(
+        ingrediente_id=ingrediente_id,
+        tipo=data.tipo,
+        quantidade=data.quantidade,
+        saldo_anterior=saldo_anterior,
+        saldo_posterior=round(novo_saldo, 4),
+        motivo=data.motivo,
+    )
+    session.add(mov)
+
+    ingrediente.quantidade_estoque = round(novo_saldo, 4)
+    await session.commit()
+    await session.refresh(mov)
+    return mov
 
 
 async def _verificar_estoque_baixo(

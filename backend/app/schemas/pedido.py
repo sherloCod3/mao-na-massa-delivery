@@ -24,6 +24,8 @@ class ItemPedidoResponse(BaseModel):
     preco_unitario: float
     customizacoes: str | None = None
     subtotal: float
+    variacao_nome: str | None = None
+    produto_nome: str | None = None
 
 
 class PedidoCreate(BaseModel):

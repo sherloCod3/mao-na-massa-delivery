@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
+from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido
+from app.models.produto import Produto
+from app.models.variacao import Variacao
 from app.schemas.pedido import PedidoTrackingResponse
 
 router = APIRouter(prefix="/publico", tags=["Público"])
@@ -29,5 +32,24 @@ async def tracking_pedido(
 
     if pedido.status == "cancelado":
         raise HTTPException(status_code=410, detail="Este pedido foi cancelado")
+
+    # Buscar nomes das variações e produtos para cada item
+    if pedido.itens:
+        variacao_ids = [i.variacao_id for i in pedido.itens]
+        v_query = (
+            select(Variacao.id, Variacao.nome, Produto.nome)
+            .join(Produto, Variacao.produto_id == Produto.id)
+            .where(Variacao.id.in_(variacao_ids))
+        )
+        v_result = await session.execute(v_query)
+        variacao_map = {
+            vid: {"v": vnome, "p": pnome}
+            for vid, vnome, pnome in v_result.all()
+        }
+        for item in pedido.itens:
+            info = variacao_map.get(item.variacao_id)
+            if info:
+                item.variacao_nome = info["v"]
+                item.produto_nome = info["p"]
 
     return pedido

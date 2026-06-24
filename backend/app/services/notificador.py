@@ -99,6 +99,35 @@ async def _salvar_notificacao(
 # ─── Notificações públicas ────────────────────────────────────────
 
 
+async def _whatsapp_evolution_enviar(telefone: str, mensagem: str) -> bool:
+    """Send a WhatsApp message via Evolution API (self-hosted Docker)."""
+    api_url = settings.evolution_api_url
+    api_key = settings.evolution_api_key
+    if not api_url or not api_key:
+        return False
+
+    digitos = "".join(c for c in telefone if c.isdigit())
+    if not digitos.startswith("55"):
+        digitos = f"55{digitos}"
+
+    instance = "mao-na-massa"
+    try:
+        url = f"{api_url.rstrip('/')}/message/send/{instance}"
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                url,
+                headers={"apikey": api_key, "Content-Type": "application/json"},
+                json={"number": digitos, "text": mensagem, "delay": 1},
+            )
+        if resp.status_code not in (200, 201):
+            logger.error("Evolution API error: %s — %s", resp.status_code, resp.text)
+            return False
+        return True
+    except Exception as exc:
+        logger.exception("Falha ao enviar WhatsApp Evolution: %s", exc)
+        return False
+
+
 async def notificar_novo_pedido(
     pedido_id: int,
     cliente_nome: str,
@@ -112,17 +141,19 @@ async def notificar_novo_pedido(
     contato = f"\n📞 Whatsapp: {whatsapp}" if whatsapp else ""
     detalhes = f"\n{itens_resumo}"
 
-    # Gerar link wa.me se tiver WhatsApp
-    link_whatsapp = None
-    if whatsapp:
-        msg_cliente = (
-            f"Olá {cliente_nome}! 🥟\n\n"
-            f"📥 Pedido #{pedido_id} recebido com sucesso!\n"
-            f"💰 Total: R$ {total:.2f}\n\n"
-            f"Em breve começaremos a preparar! 👨‍🍳\n"
-            f"Obrigado por comprar no Mão na Massa! 🎉"
-        )
-        link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente)
+    # Gerar link wa.me + Evolution API se configurado
+    msg_cliente = (
+        f"Olá {cliente_nome}! 🥟\n\n"
+        f"📥 Pedido #{pedido_id} recebido com sucesso!\n"
+        f"💰 Total: R$ {total:.2f}\n\n"
+        f"Em breve começaremos a preparar! 👨‍🍳\n"
+        f"Obrigado por comprar no Mão na Massa! 🎉"
+    )
+    link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente) if whatsapp else None
+
+    # WhatsApp automático via Evolution API (se configurado)
+    if whatsapp and settings.evolution_api_url:
+        await _whatsapp_evolution_enviar(whatsapp, msg_cliente)
 
     texto_telegram = (
         f"<b>🆕 NOVO PEDIDO #{pedido_id}</b>\n"
@@ -135,7 +166,7 @@ async def notificar_novo_pedido(
     )
 
     if link_whatsapp:
-        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>Enviar WhatsApp para {cliente_nome}</a>"
+        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>WhatsApp para {cliente_nome}</a>"
 
     await _telegram_send(texto_telegram)
     await _salvar_notificacao(
@@ -168,16 +199,18 @@ async def notificar_status_pedido(
     titulo = f"{emoji} Pedido #{pedido_id} — {status_nome}"
     mensagem = f"Status do pedido de {cliente_nome} alterado para: {status_nome}"
 
-    # Gerar link wa.me se tiver WhatsApp
-    link_whatsapp = None
-    if whatsapp:
-        msg_cliente = (
-            f"Olá {cliente_nome}! 🥟\n\n"
-            f"Seu pedido #{pedido_id} está: *{status_nome}*\n"
-            f"💰 Valor: R$ {total:.2f}\n\n"
-            f"Obrigado por comprar no Mão na Massa! 🎉"
-        )
-        link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente)
+    # WhatsApp automático via Evolution API + wa.me link
+    msg_cliente = (
+        f"Olá {cliente_nome}! 🥟\n\n"
+        f"Seu pedido #{pedido_id} está: *{status_nome}*\n"
+        f"💰 Valor: R$ {total:.2f}\n\n"
+        f"Obrigado por comprar no Mão na Massa! 🎉"
+    )
+    link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente) if whatsapp else None
+
+    # WhatsApp automático via Evolution API (se configurado)
+    if whatsapp and settings.evolution_api_url:
+        await _whatsapp_evolution_enviar(whatsapp, msg_cliente)
 
     texto_telegram = (
         f"{emoji} <b>Pedido #{pedido_id}</b>\n"
@@ -188,9 +221,8 @@ async def notificar_status_pedido(
         f"🏠 <a href='{settings.app_url}/pedidos/{pedido_id}'>Ver no painel</a>"
     )
 
-    # Adicionar link WhatsApp no Telegram se disponível
     if link_whatsapp:
-        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>Enviar WhatsApp para {cliente_nome}</a>"
+        texto_telegram += f"\n📱 <a href='{link_whatsapp}'>WhatsApp para {cliente_nome}</a>"
 
     await _telegram_send(texto_telegram)
     await _salvar_notificacao(

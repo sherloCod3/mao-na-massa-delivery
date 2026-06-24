@@ -92,6 +92,17 @@ export interface ReceitaItem {
   quantidade: number
 }
 
+export interface MovimentacaoEstoque {
+  id: number
+  ingrediente_id: number
+  tipo: string
+  quantidade: number
+  saldo_anterior: number
+  saldo_posterior: number
+  motivo: string | null
+  created_at: string
+}
+
 export interface PedidoItem {
   id: number
   variacao_id: number
@@ -99,6 +110,8 @@ export interface PedidoItem {
   preco_unitario: number
   customizacoes: string | null
   subtotal: number
+  variacao_nome: string | null
+  produto_nome: string | null
 }
 
 export interface Pedido {
@@ -200,6 +213,8 @@ export const ingredientesApi = {
   criar: (data: Partial<Ingrediente>) => request<Ingrediente>('/ingredientes', { method: 'POST', body: JSON.stringify(data) }),
   atualizar: (id: number, data: Partial<Ingrediente>) => request<Ingrediente>(`/ingredientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   desativar: (id: number) => request<void>(`/ingredientes/${id}`, { method: 'DELETE' }),
+  movimentar: (id: number, data: { tipo: 'entrada' | 'saida'; quantidade: number; motivo?: string }) =>
+    request<MovimentacaoEstoque>(`/ingredientes/${id}/movimentar`, { method: 'POST', body: JSON.stringify(data) }),
 }
 
 export const produtosApi = {

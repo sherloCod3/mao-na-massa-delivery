@@ -22,6 +22,9 @@ class Ingrediente(Base):
 
     # relationships
     receitas: Mapped[list["ReceitaItem"]] = relationship(back_populates="ingrediente")
+    movimentacoes: Mapped[list["MovimentacaoEstoque"]] = relationship(
+        back_populates="ingrediente", order_by="MovimentacaoEstoque.created_at.desc()"
+    )
 
     @property
     def estoque_baixo(self) -> bool:
