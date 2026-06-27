@@ -42,7 +42,9 @@ Infra:     Railway (RAILPACK) | PWA offline-ready | JWT auth
 |-------|-----|------------|
 | Backend (API) | **48 testes** | pytest + httpx + SQLite in-memory |
 | Frontend (unit) | **189 testes** | vitest + @testing-library/react |
-| Coverage frontend | **~79% stmts** (components) | @vitest/coverage-v8 |
+| Coverage components | **~79% stmts** | @vitest/coverage-v8 |
+| Coverage services | **~68% stmts** | @vitest/coverage-v8 |
+| Coverage utils | **~98% stmts** | @vitest/coverage-v8 |
 | Linting | 0 erros | Ruff (lint + format) |
 | Security | 0 issues | Bandit |
 | Análise estática | Advisory | Pylint + SonarCloud |

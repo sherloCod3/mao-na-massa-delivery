@@ -257,7 +257,11 @@ preco_sugerido = custo_unitario × (1 + margem_percentual / 100)
 - [x] docs/briefing.md
 - [x] `.env` com defaults funcionais
 - [x] `.env.example` (backend + frontend)
-- [x] Testes de API: 17 testes, pytest + httpx AsyncClient
+- [x] Testes de API: 48 testes, pytest + httpx AsyncClient
+- [x] Testes Frontend: 189 testes, vitest + @testing-library/react
+- [x] QA tools: Ruff, Bandit, Pylint configurados
+- [x] CI: GitHub Actions (`.github/workflows/qa.yml`)
+- [x] Coverage threshold configurado
 - [x] SecurityHeadersMiddleware aplicado (HSTS, XFO, CSP)
 
 ---
@@ -447,11 +451,9 @@ Build automático (Python/FastAPI detectado). Volume `/data` montado para SQLite
 1. **Customizações salvas como string JSON** — `ItemPedido.customizacoes` é `str | None`
 2. **DashboardPeriodoResponse.total_custos = 0.0** — Placeholder
 3. **Sem paginação** — Listas podem ficar pesadas
-4. **Sem testes automatizados** — Nenhum teste no projeto
-5. **Soft delete inconsistente** — Ingrediente/Produto/Variacao usam `ativo=False`
-6. **PedidoDetalhe.tsx** — Atualização de status não recarrega dados
-7. **PWA icons** — `icon-192.png` e `icon-512.png` podem não existir em `public/`
-8. **Sem auth** — Admin acessa por saber a URL (aceito para MVP)
+4. **Soft delete inconsistente** — Ingrediente/Produto/Variacao usam `ativo=False`
+5. **PedidoDetalhe.tsx** — Atualização de status não recarrega dados
+6. **PWA icons** — `icon-192.png` e `icon-512.png` podem não existir em `public/`
 
 ### 📌 Decisões de Arquitetura
 
