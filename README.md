@@ -10,23 +10,54 @@ Sistema completo para gerenciar produção, custos, preços e pedidos de salgado
 
 | Funcionalidade | Descrição |
 |---|---|
-| **📦 Ingredientes** | Cadastro com preço por embalagem (ex: R$15,90/kg). Conversão automática para custo por grama/ml |
+| **📦 Ingredientes** | Cadastro com preço por embalagem + controle de estoque com alerta de mínimo |
 | **🍪 Produtos & Variações** | Coxinha (tradicional, cheddar), pudim, etc. Cada variação com sua própria receita e margem |
 | **💰 Cálculo de Custo** | Custo unitário automático com base nos ingredientes da receita. Preço sugerido = custo × (1 + margem%) |
-| **📋 Pedidos** | Cadastro com múltiplos itens, customizações, formas de pagamento. Total calculado automaticamente |
-| **🔄 Status Tracking** | Fluxo: recebido → produção → entrega → entregue. Atualização com 1 clique |
-| **🔗 Tracking Público** | Link único por pedido (sem login). Cliente acompanha em tempo real via WhatsApp |
-| **📊 Dashboard** | Visão geral do dia: pedidos ativos, faturamento, entregas, distribuição por status |
-| **📱 PWA** | Progressive Web App — funciona offline (em desenvolvimento) |
+| **📋 Pedidos** | Cadastro com múltiplos itens, customizações, formas de pagamento |
+| **🔄 Status Tracking** | Fluxo: recebido → produção → entrega → entregue |
+| **🔗 Tracking Público** | Link único por pedido (sem login). Cliente acompanha em tempo real |
+| **📊 Dashboard** | Faturamento, custos, lucro, top produtos, nível de estoque, gráfico mensal |
+| **📱 PWA** | Progressive Web App com cache offline e Add to Home Screen |
+| **🔐 Autenticação** | JWT (24h exp), rate limiting por IP, CSP, TrustedHostMiddleware |
+| **💬 Notificações** | WhatsApp (formatado) e Telegram integrados |
+| **🛒 Lista de Compras** | Sugestões automáticas baseadas em receitas, listas salvas |
+| **📤 Exportação CSV** | Relatórios do dashboard exportáveis |
 
 ---
 
 ## 🏗 Stack
 
 ```
-Frontend:  React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + React Router 7
-Backend:   Python 3.14 + FastAPI + SQLAlchemy 2.0 (async) + SQLite (aiosqlite)
-Infra:     Monorepo | PWA offline-ready | Zero login para clientes
+Frontend:  React 19 + TypeScript + Vite 8 + Tailwind CSS 4 + Recharts
+Backend:   Python 3.12+ + FastAPI + SQLAlchemy 2.0 (async) + SQLite
+QA:        Ruff + Bandit + Pylint + SonarCloud + Vitest + Pytest
+Infra:     Railway (RAILPACK) | PWA offline-ready | JWT auth
+```
+
+---
+
+## 📊 Qualidade & Testes
+
+| Suite | Qtd | Ferramenta |
+|-------|-----|------------|
+| Backend (API) | **48 testes** | pytest + httpx + SQLite in-memory |
+| Frontend (unit) | **189 testes** | vitest + @testing-library/react |
+| Coverage frontend | **~79% stmts** (components) | @vitest/coverage-v8 |
+| Linting | 0 erros | Ruff (lint + format) |
+| Security | 0 issues | Bandit |
+| Análise estática | Advisory | Pylint + SonarCloud |
+
+### QA local
+
+```bash
+# Backend QA completo
+cd backend && bash scripts/qa.sh
+
+# Frontend testes + coverage
+cd frontend && npm test && npm run coverage
+
+# CI (GitHub Actions)
+# .github/workflows/qa.yml — executa automaticamente em push/PR
 ```
 
 ---
@@ -42,28 +73,29 @@ Infra:     Monorepo | PWA offline-ready | Zero login para clientes
 
 ```bash
 cd backend
-uv sync                    # Instalar dependências
-cp .env.example .env       # Configurar (padrão SQLite local)
-uv run uvicorn app.main:app --reload
+uv sync                              # Instalar dependências
+cp .env.example .env                 # Configurar
+uv run python -m pytest tests/ -v    # Rodar testes
+uv run uvicorn app.main:app --reload # Servidor dev :8000
 ```
 
-Servidor em `http://localhost:8000` — Docs da API em `/docs`
+📖 Docs da API em `http://localhost:8000/docs`
 
 ### Frontend
 
 ```bash
 cd frontend
-npm install                 # Instalar dependências
-npm run dev                 # Servidor dev em :5173
+npm install
+npm run dev          # Servidor dev :5173 (proxy /api → :8000)
+npm test             # Rodar testes
+npm run coverage     # Coverage report
 ```
-
-O frontend faz proxy de `/api/*` para o backend.
 
 ### Build produção
 
 ```bash
 cd frontend
-npm run build              # Gera em frontend/dist/
+npm run build        # Gera em frontend/dist/
 ```
 
 ---
@@ -75,65 +107,86 @@ mao-na-massa/
 ├── backend/
 │   ├── app/
 │   │   ├── base.py              # SQLAlchemy Base
-│   │   ├── config.py            # Config (Pydantic Settings)
-│   │   ├── database.py          # Engine & session async
-│   │   ├── main.py              # FastAPI app + CORS + lifespan
-│   │   ├── models/              # ORM: Ingrediente, Produto, Variacao,
-│   │   │                        #        ReceitaItem, Pedido, ItemPedido
-│   │   ├── schemas/             # Pydantic: request/response
-│   │   ├── routers/             # API: ingredientes, produtos, variacoes,
-│   │   │                        #       pedidos, publico, dashboard
-│   │   └── services/            # (reservado)
+│   │   ├── config.py            # Settings (Pydantic)
+│   │   ├── database.py          # Engine async + WAL mode
+│   │   ├── main.py              # FastAPI + CORS + CSP
+│   │   ├── auth.py              # JWT auth
+│   │   ├── models/              # ORM: +Notificacao, MovimentacaoEstoque
+│   │   ├── schemas/             # Pydantic request/response
+│   │   ├── routers/             # API: +dashboard, lista-compras, admin
+│   │   └── services/            # Notificador (WhatsApp + Telegram)
+│   ├── alembic/                 # Migrations
+│   ├── scripts/
+│   │   ├── qa.sh                # QA unificado (Ruff + Bandit + Pylint + Tests)
+│   │   ├── backup_db.py         # Backup SQLite
+│   │   └── seed_site_config.py  # Seed inicial
+│   ├── sonar-project.properties
 │   ├── pyproject.toml
-│   └── .env
+│   └── railway.json
 ├── frontend/
 │   ├── src/
-│   │   ├── api/client.ts        # API client tipado
-│   │   ├── components/          # Layout, Sidebar
-│   │   ├── pages/               # Dashboard, Ingredientes, Produtos,
-│   │   │                        #   Pedidos, PedidoNovo, PedidoDetalhe,
-│   │   │                        #   PublicTracking
-│   │   ├── App.tsx              # React Router
-│   │   └── main.tsx             # Entry point
+│   │   ├── api/client.ts        # API client tipado com retry
+│   │   ├── components/          # ~20 componentes reutilizáveis
+│   │   ├── pages/               # 10 páginas (admin + tracking)
+│   │   ├── services/            # db.ts (Dexie), mutationQueue, offlineClient
+│   │   ├── utils/               # csv, errors, pedido, whatsapp
+│   │   └── sw.ts                # Service Worker (Workbox)
 │   └── package.json
-└── docs/
-    ├── architecture.md          # Arquitetura completa
-    └── plans/                   # Planos de implementação
+├── docs/
+│   ├── architecture.md
+│   ├── briefing.md
+│   ├── postgresql-migration.md  # Plano de migração SQLite → PostgreSQL
+│   └── plans/
+├── .github/workflows/qa.yml     # CI: lint + testes + SonarCloud
+└── README.md
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-| Método | Rota | Descrição |
-|---|---|---|
-| **Ingredientes** | | |
-| `GET` | `/api/v1/ingredientes` | Listar todos |
-| `POST` | `/api/v1/ingredientes` | Criar |
-| `PUT` | `/api/v1/ingredientes/{id}` | Atualizar |
-| `DELETE` | `/api/v1/ingredientes/{id}` | Desativar |
-| **Produtos** | | |
-| `GET` | `/api/v1/produtos` | Listar (com variações) |
-| `POST` | `/api/v1/produtos` | Criar |
-| `GET` | `/api/v1/produtos/{id}` | Detalhe |
-| **Variações** | | |
-| `GET` | `/api/v1/produtos/{id}/variacoes` | Listar por produto |
-| `POST` | `/api/v1/produtos/{id}/variacoes` | Criar |
-| `PUT` | `/api/v1/variacoes/{id}` | Atualizar |
-| `GET` | `/api/v1/variacoes/{id}/receita` | Itens da receita |
-| `POST` | `/api/v1/variacoes/{id}/receita` | Adicionar ingrediente |
-| `DELETE` | `/api/v1/receita/{id}` | Remover ingrediente |
-| `GET` | `/api/v1/variacoes/{id}/custo` | Cálculo de custo + preço sugerido |
-| **Pedidos** | | |
-| `GET` | `/api/v1/pedidos` | Listar |
-| `POST` | `/api/v1/pedidos` | Criar |
-| `GET` | `/api/v1/pedidos/{id}` | Detalhe |
-| `PUT` | `/api/v1/pedidos/{id}/status` | Atualizar status |
-| `DELETE` | `/api/v1/pedidos/{id}` | Cancelar |
-| **Público** | | |
-| `GET` | `/api/v1/publico/pedidos/{token}` | Tracking (sem auth) |
-| **Dashboard** | | |
-| `GET` | `/api/v1/dashboard/hoje` | Resumo do dia |
+Todas as rotas prefixadas com `/api/v1`.
+
+| Método | Rota | Descrição | Auth |
+|--------|------|-----------|------|
+| **Auth** | | | |
+| `POST` | `/admin/login` | Login com ADMIN_TOKEN → JWT (24h) | — |
+| **Ingredientes** | | | |
+| `GET` | `/ingredientes` | Listar (suporta `?search=&limite=`) | 🔒 |
+| `POST` | `/ingredientes` | Criar | 🔒 |
+| `PUT` | `/ingredientes/{id}` | Atualizar | 🔒 |
+| `DELETE` | `/ingredientes/{id}` | Desativar | 🔒 |
+| `POST` | `/ingredientes/{id}/movimentar` | Entrada/saída estoque | 🔒 |
+| `GET` | `/ingredientes/{id}/movimentacoes` | Histórico | 🔒 |
+| **Produtos** | | | |
+| `GET` | `/produtos` | Listar (suporta `?search=`) | 🔒 |
+| `POST` | `/produtos` | Criar | 🔒 |
+| `GET` | `/produtos/{id}` | Detalhe | 🔒 |
+| **Variações** | | | |
+| `POST` | `/produtos/{id}/variacoes` | Criar | 🔒 |
+| `GET` | `/variacoes/{id}/receita` | Itens da receita | 🔒 |
+| `GET` | `/variacoes/{id}/custo` | Custo + preço sugerido | 🔒 |
+| **Pedidos** | | | |
+| `GET` | `/pedidos` | Listar (filtros) | 🔒 |
+| `POST` | `/pedidos` | Criar | ⚡ rate limit |
+| `PUT` | `/pedidos/{id}/status` | Atualizar status | 🔒 |
+| **Tracking** | | | |
+| `GET` | `/publico/pedidos/{token}` | Tracking (sem auth) | — |
+| **Dashboard** | | | |
+| `GET` | `/dashboard/hoje` | Resumo do dia | 🔒 |
+| `GET` | `/dashboard/periodo` | Relatório período | 🔒 |
+| `GET` | `/dashboard/mensal` | Faturamento mensal | 🔒 |
+| `GET` | `/dashboard/top-produtos` | Mais vendidos | 🔒 |
+| **Notificações** | | | |
+| `GET` | `/notificacoes` | Listar | 🔒 |
+| `POST` | `/notificacoes/{id}/ler` | Marcar lida | 🔒 |
+| **Lista de Compras** | | | |
+| `GET` | `/lista-compras` | Listar itens | 🔒 |
+| `POST` | `/lista-compras` | Criar item | 🔒 |
+| `POST` | `/lista-compras/salvar` | Salvar lista | 🔒 |
+| `GET` | `/lista-compras/sugestoes` | Sugestões automáticas | 🔒 |
+
+🔒 = Requer `Authorization: Bearer <JWT>`
 
 ---
 
@@ -144,8 +197,6 @@ custo_por_unidade = preco_ingrediente / embalagem
   Ex: Frango R$15,90 / 1000g = R$0,0159/g
 
 custo_item = quantidade × custo_por_unidade
-  Ex: 50g × R$0,0159 = R$0,80
-
 custo_unitario (variação) = Σ custo_item de todos ingredientes
 preco_sugerido = custo_unitario × (1 + margem_percentual/100)
 ```
@@ -157,33 +208,31 @@ preco_sugerido = custo_unitario × (1 + margem_percentual/100)
 ```
 Produto (coxinha)
   └─ Variação (tradicional)
-       ├─ preco_venda: R$ 5,00
-       ├─ margem_percentual: 60%
+       ├─ preco_venda, margem_percentual
        └─ ReceitaItem (ingredientes)
-            ├─ Farinha 30g
-            ├─ Frango 50g
-            └─ Óleo 15ml
+            ├─ Farinha 30g, Frango 50g, Óleo 15ml
+            └─ Cada ingrediente tem: nome, unidade, preço_atual
 
 Pedido
   ├─ cliente_nome, whatsapp
+  ├─ token_acesso (UUID → link tracking)
   ├─ status: recebido → producao → entrega → entregue
-  ├─ token_acesso (UUID, tracking público)
-  └─ itens
-       ├─ variação + quantidade + preço
-       └─ customizações (cheddar +R$1,00)
+  └─ itens [variação + quantidade + preço + customizações]
 ```
 
 ---
 
 ## 🗺 Roadmap
 
-- [x] **Fase 0/1 — Backend**: API REST completa com banco SQLite
+- [x] **Fase 0/1 — Backend**: API REST completa com SQLite + Alembic
 - [x] **Fase 2 — Frontend Admin**: React + Tailwind (Dashboard, CRUDs, Pedidos)
-- [x] **Fase 2.5 — Tracking Público**: Página de acompanhamento para cliente
-- [ ] **Fase 3 — PWA**: Service Worker, IndexedDB, modo offline
-- [ ] **Fase 4 — Deploy**: Docker, deploy em servidor VPS
-- [ ] **Fase 5 — Relatórios**: Gráficos de faturamento, custos, sazonalidade
-- [ ] **Fase 6 — Notificações**: Alertas de pedidos por WhatsApp/Telegram
+- [x] **Fase 2.5 — Tracking Público**: Link único por pedido + timeline
+- [x] **Fase 2.6 — Notificações**: WhatsApp formatado + Telegram + in-app
+- [x] **Fase 3 — PWA**: Service Worker, IndexedDB, fila offline, auto-sync
+- [x] **Fase 3.5 — Estoque**: Movimentações, gráfico de nível, alertas
+- [x] **Fase 4 — Qualidade**: Ruff, Bandit, Pylint, SonarCloud, 237 testes
+- [ ] **Fase 5 — Deploy**: Railway (backend + frontend estático + PostgreSQL)
+- [ ] **Fase 6 — Relatórios Avançados**: Sazonalidade, previsão, PDF
 
 ---
 

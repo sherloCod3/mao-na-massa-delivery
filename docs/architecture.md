@@ -273,7 +273,11 @@ Obrigado por comprar no Mão na Massa! 🎉
 | Suite | Qtd | Tech |
 |-------|-----|------|
 | Backend (API) | 48 testes | pytest + httpx + SQLite in-memory |
-| Frontend (unit) | 33 testes | vitest |
+| Frontend (unit) | 189 testes | vitest + @testing-library/react |
+| Coverage threshold | ✅ 75/70/65/80% | @vitest/coverage-v8 |
+| Linting | 0 erros | Ruff |
+| Security | 0 issues | Bandit |
+| CI | Push/PR | GitHub Actions (`.github/workflows/qa.yml`) |
 
 ## 9. Princípios de Desenvolvimento
 
