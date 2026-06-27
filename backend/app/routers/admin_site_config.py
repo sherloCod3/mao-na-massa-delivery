@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import verify_admin
 from app.database import get_session
-from app.errors import NotFoundError, ConflictError
+from app.errors import ConflictError, NotFoundError
 from app.models.site_config import SiteConfig
 from app.schemas.site_config import (
     SiteConfigCreate,
@@ -36,9 +36,7 @@ async def obter_configuracao(
     chave: str,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(SiteConfig).where(SiteConfig.chave == chave)
-    )
+    result = await session.execute(select(SiteConfig).where(SiteConfig.chave == chave))
     config = result.scalar_one_or_none()
     if not config:
         raise NotFoundError("Configuração", chave)
@@ -51,9 +49,7 @@ async def criar_configuracao(
     session: AsyncSession = Depends(get_session),
 ):
     # Verificar se chave já existe
-    existing = await session.execute(
-        select(SiteConfig).where(SiteConfig.chave == data.chave)
-    )
+    existing = await session.execute(select(SiteConfig).where(SiteConfig.chave == data.chave))
     if existing.scalar_one_or_none():
         raise ConflictError(f"Chave '{data.chave}' já existe")
 
@@ -70,9 +66,7 @@ async def atualizar_configuracao(
     data: SiteConfigUpdate,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(SiteConfig).where(SiteConfig.chave == chave)
-    )
+    result = await session.execute(select(SiteConfig).where(SiteConfig.chave == chave))
     config = result.scalar_one_or_none()
     if not config:
         raise NotFoundError("Configuração", chave)
@@ -91,9 +85,7 @@ async def deletar_configuracao(
     chave: str,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(SiteConfig).where(SiteConfig.chave == chave)
-    )
+    result = await session.execute(select(SiteConfig).where(SiteConfig.chave == chave))
     config = result.scalar_one_or_none()
     if not config:
         raise NotFoundError("Configuração", chave)

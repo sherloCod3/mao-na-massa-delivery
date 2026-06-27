@@ -12,7 +12,7 @@ from app.auth import limiter
 from app.config import settings
 from app.database import init_db
 from app.errors import ErrorHandlerMiddleware, RequestIDMiddleware
-from app.models import *  # noqa: F401, F403 — register models with Base.metadata
+from app.models import *  # noqa: F403 — register models with Base.metadata
 from app.routers import (
     admin_auth_router,
     admin_site_config_router,

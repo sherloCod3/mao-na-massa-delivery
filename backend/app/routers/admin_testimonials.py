@@ -33,9 +33,7 @@ async def obter_depoimento(
     testimonial_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(Testimonial).where(Testimonial.id == testimonial_id)
-    )
+    result = await session.execute(select(Testimonial).where(Testimonial.id == testimonial_id))
     depoimento = result.scalar_one_or_none()
     if not depoimento:
         raise NotFoundError("Depoimento", testimonial_id)
@@ -49,9 +47,7 @@ async def atualizar_depoimento(
     session: AsyncSession = Depends(get_session),
 ):
     """Admin atualiza/moderada um depoimento (aprova, rejeita, edita)."""
-    result = await session.execute(
-        select(Testimonial).where(Testimonial.id == testimonial_id)
-    )
+    result = await session.execute(select(Testimonial).where(Testimonial.id == testimonial_id))
     depoimento = result.scalar_one_or_none()
     if not depoimento:
         raise NotFoundError("Depoimento", testimonial_id)
@@ -70,9 +66,7 @@ async def deletar_depoimento(
     testimonial_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(Testimonial).where(Testimonial.id == testimonial_id)
-    )
+    result = await session.execute(select(Testimonial).where(Testimonial.id == testimonial_id))
     depoimento = result.scalar_one_or_none()
     if not depoimento:
         raise NotFoundError("Depoimento", testimonial_id)

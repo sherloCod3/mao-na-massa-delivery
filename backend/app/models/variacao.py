@@ -17,7 +17,9 @@ class Variacao(Base):
     margem_percentual: Mapped[float] = mapped_column(Float, nullable=False, default=50.0)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
     # relationships
     produto: Mapped["Produto"] = relationship(back_populates="variacoes")
@@ -34,7 +36,11 @@ class Variacao(Base):
             return 0.0
         total = 0.0
         for item in self.receita:
-            preco_unit = item.ingrediente.preco_atual / item.ingrediente.embalagem if item.ingrediente.embalagem > 0 else 0
+            preco_unit = (
+                item.ingrediente.preco_atual / item.ingrediente.embalagem
+                if item.ingrediente.embalagem > 0
+                else 0
+            )
             total += item.quantidade * preco_unit
         return round(total, 2)
 

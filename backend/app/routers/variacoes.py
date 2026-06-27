@@ -25,6 +25,7 @@ router = APIRouter(
 
 # ─── Variações ───────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/produtos/{produto_id}/variacoes",
     response_model=list[VariacaoResponse],
@@ -114,6 +115,7 @@ async def desativar_variacao(
 
 # ─── Receita (ingredientes da variação) ──────────────────────────────────────
 
+
 @router.get(
     "/variacoes/{variacao_id}/receita",
     response_model=list[ReceitaItemResponse],
@@ -199,6 +201,7 @@ async def remover_ingrediente_receita(
 
 # ─── Cálculo de custos ───────────────────────────────────────────────────────
 
+
 @router.get("/variacoes/{variacao_id}/custo", response_model=CustoResponse)
 async def calcular_custo_variacao(
     variacao_id: int,
@@ -225,6 +228,7 @@ async def calcular_custo_variacao(
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
+
 
 def _serialize_variacao(variacao: Variacao) -> VariacaoResponse:
     return VariacaoResponse(

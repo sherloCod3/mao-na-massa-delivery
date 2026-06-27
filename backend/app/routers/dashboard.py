@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import Date, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -44,7 +44,9 @@ async def dashboard_hoje(session: AsyncSession = Depends(get_session)):
     query = (
         select(Pedido)
         .options(
-            selectinload(Pedido.itens).selectinload(ItemPedido.variacao).selectinload(Variacao.receita),
+            selectinload(Pedido.itens)
+            .selectinload(ItemPedido.variacao)
+            .selectinload(Variacao.receita),
         )
         .where(func.date(Pedido.created_at) == today)
     )
@@ -93,7 +95,9 @@ async def dashboard_periodo(
     query = (
         select(Pedido)
         .options(
-            selectinload(Pedido.itens).selectinload(ItemPedido.variacao).selectinload(Variacao.receita),
+            selectinload(Pedido.itens)
+            .selectinload(ItemPedido.variacao)
+            .selectinload(Variacao.receita),
         )
         .where(Pedido.status == StatusPedido.entregue.value)
     )
@@ -132,7 +136,9 @@ async def dashboard_mensal(
     query = (
         select(Pedido)
         .options(
-            selectinload(Pedido.itens).selectinload(ItemPedido.variacao).selectinload(Variacao.receita),
+            selectinload(Pedido.itens)
+            .selectinload(ItemPedido.variacao)
+            .selectinload(Variacao.receita),
         )
         .where(Pedido.status == StatusPedido.entregue.value)
         .order_by(Pedido.created_at.asc())
@@ -155,13 +161,15 @@ async def dashboard_mensal(
     items = []
     for ym in sorted_meses:
         d = meses_map[ym]
-        items.append(MesItem(
-            mes=ym,
-            faturamento=round(d["faturamento"], 2),
-            custos=round(d["custos"], 2),
-            lucro=round(d["faturamento"] - d["custos"], 2),
-            total_pedidos=d["total_pedidos"],
-        ))
+        items.append(
+            MesItem(
+                mes=ym,
+                faturamento=round(d["faturamento"], 2),
+                custos=round(d["custos"], 2),
+                lucro=round(d["faturamento"] - d["custos"], 2),
+                total_pedidos=d["total_pedidos"],
+            )
+        )
 
     return DashboardMensalResponse(meses=items)
 
@@ -204,6 +212,4 @@ async def dashboard_top_produtos(
     # Sort by quantity desc and take top N
     sorted_produtos = sorted(agg.values(), key=lambda x: x["quantidade"], reverse=True)[:limite]
 
-    return DashboardTopProdutosResponse(produtos=[
-        ProdutoMaisVendido(**p) for p in sorted_produtos
-    ])
+    return DashboardTopProdutosResponse(produtos=[ProdutoMaisVendido(**p) for p in sorted_produtos])

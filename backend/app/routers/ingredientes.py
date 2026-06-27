@@ -6,12 +6,12 @@ from app.auth import verify_admin
 from app.database import get_session
 from app.errors import NotFoundError, ValidationError
 from app.models.ingrediente import Ingrediente
+from app.models.movimentacao_estoque import MovimentacaoEstoque
 from app.schemas.ingrediente import (
     IngredienteCreate,
     IngredienteResponse,
     IngredienteUpdate,
 )
-from app.models.movimentacao_estoque import MovimentacaoEstoque
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse
 from app.services.notificador import notificar_estoque_baixo
 
@@ -83,8 +83,10 @@ async def atualizar_ingrediente(
     # Verificar estoque baixo (fire-and-forget)
     background_tasks.add_task(
         _verificar_estoque_baixo,
-        ingrediente.id, ingrediente.nome,
-        ingrediente.quantidade_estoque, ingrediente.estoque_minimo,
+        ingrediente.id,
+        ingrediente.nome,
+        ingrediente.quantidade_estoque,
+        ingrediente.estoque_minimo,
         ingrediente.ativo,
     )
 
@@ -182,7 +184,9 @@ async def _verificar_estoque_baixo(
             await notificar_estoque_baixo(nome, ingrediente_id)
         except Exception:
             import logging
+
             logging.getLogger(__name__).exception(
                 "Falha ao notificar estoque baixo para ingrediente %d (%s)",
-                ingrediente_id, nome,
+                ingrediente_id,
+                nome,
             )

@@ -18,7 +18,9 @@ class ListaCompraItem(Base):
     valor_estimado: Mapped[float | None] = mapped_column(Float)
     comprado: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class ListaSalva(Base):

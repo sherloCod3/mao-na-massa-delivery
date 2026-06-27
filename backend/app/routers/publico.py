@@ -4,8 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_session
-from app.errors import NotFoundError, AppError
-from app.models.item_pedido import ItemPedido
+from app.errors import AppError, NotFoundError
 from app.models.pedido import Pedido
 from app.models.produto import Produto
 from app.models.variacao import Variacao
@@ -20,11 +19,7 @@ async def tracking_pedido(
     session: AsyncSession = Depends(get_session),
 ):
     """Rota pública — qualquer um com o token pode ver o status do pedido."""
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .where(Pedido.token_acesso == token)
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.token_acesso == token)
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
 
@@ -47,10 +42,7 @@ async def tracking_pedido(
             .where(Variacao.id.in_(variacao_ids))
         )
         v_result = await session.execute(v_query)
-        variacao_map = {
-            vid: {"v": vnome, "p": pnome}
-            for vid, vnome, pnome in v_result.all()
-        }
+        variacao_map = {vid: {"v": vnome, "p": pnome} for vid, vnome, pnome in v_result.all()}
         for item in pedido.itens:
             info = variacao_map.get(item.variacao_id)
             if info:

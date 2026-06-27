@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 class IngredienteBasico(BaseModel):
     """Minimal ingrediente info for recipe display."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

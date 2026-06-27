@@ -1,6 +1,5 @@
-import asyncio
 import uuid
-from datetime import date, datetime
+from datetime import date
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from sqlalchemy import func, select
@@ -13,13 +12,11 @@ from app.errors import NotFoundError, ValidationError
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido, StatusPedido
 from app.models.produto import Produto
-from app.models.receita_item import ReceitaItem
 from app.models.variacao import Variacao
 from app.schemas.pedido import (
     ItemPedidoCreate,
     PedidoCreate,
     PedidoResponse,
-    PedidoTrackingResponse,
     PedidoUpdateStatus,
 )
 from app.services.notificador import notificar_novo_pedido, notificar_status_pedido
@@ -46,9 +43,12 @@ def _serialize_item(item: ItemPedido) -> dict:
     }
 
 
-async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None, token_acesso: str | None):
+async def _notificar_pedido_criado(
+    pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None, token_acesso: str | None
+):
     """Busca os nomes das variações e notifica (roda em BackgroundTask)."""
     import logging
+
     logger = logging.getLogger(__name__)
 
     from app.database import async_session as _async_session
@@ -56,7 +56,13 @@ async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: flo
     try:
         async with _async_session() as s:
             query = (
-                select(ItemPedido.variacao_id, ItemPedido.quantidade, ItemPedido.preco_unitario, Variacao.nome, Produto.nome)
+                select(
+                    ItemPedido.variacao_id,
+                    ItemPedido.quantidade,
+                    ItemPedido.preco_unitario,
+                    Variacao.nome,
+                    Produto.nome,
+                )
                 .join(Variacao, ItemPedido.variacao_id == Variacao.id)
                 .join(Produto, Variacao.produto_id == Produto.id)
                 .where(ItemPedido.pedido_id == pedido_id)
@@ -65,8 +71,7 @@ async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: flo
             rows = result.all()
 
         itens_resumo = "\n".join(
-            f"  • {q}x {p_nome} ({v_nome}) — R$ {pu:.2f}"
-            for _, q, pu, v_nome, p_nome in rows
+            f"  • {q}x {p_nome} ({v_nome}) — R$ {pu:.2f}" for _, q, pu, v_nome, p_nome in rows
         )
     except Exception as exc:
         logger.warning("Erro ao buscar itens do pedido %d para notificação: %s", pedido_id, exc)
@@ -93,11 +98,7 @@ async def listar_pedidos(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .order_by(Pedido.created_at.desc())
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).order_by(Pedido.created_at.desc())
 
     if status_filter:
         query = query.where(Pedido.status == status_filter)
@@ -149,18 +150,18 @@ async def criar_pedido(
     await session.commit()
 
     # Re-fetch with eager-loaded items
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .where(Pedido.id == pedido.id)
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido.id)
     result = await session.execute(query)
     pedido = result.scalar_one()
 
     # Notificar admin sobre novo pedido (fire-and-forget via BackgroundTasks)
     background_tasks.add_task(
-        _notificar_pedido_criado, pedido.id, pedido.cliente_nome,
-        pedido.total, pedido.cliente_whatsapp, pedido.token_acesso
+        _notificar_pedido_criado,
+        pedido.id,
+        pedido.cliente_nome,
+        pedido.total,
+        pedido.cliente_whatsapp,
+        pedido.token_acesso,
     )
 
     return pedido
@@ -172,11 +173,7 @@ async def obter_pedido(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .where(Pedido.id == pedido_id)
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido_id)
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
@@ -192,11 +189,7 @@ async def atualizar_status_pedido(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .where(Pedido.id == pedido_id)
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido_id)
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
@@ -234,11 +227,7 @@ async def cancelar_pedido(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = (
-        select(Pedido)
-        .options(selectinload(Pedido.itens))
-        .where(Pedido.id == pedido_id)
-    )
+    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido_id)
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:

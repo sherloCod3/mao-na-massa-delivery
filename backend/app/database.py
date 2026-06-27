@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from sqlalchemy import event
@@ -18,7 +17,7 @@ def _ensure_db_dir(db_url: str) -> str:
     prefix = "sqlite+aiosqlite:///"
     if not db_url.startswith(prefix):
         return db_url
-    path_str = db_url[len(prefix):]
+    path_str = db_url[len(prefix) :]
     db_path = Path(path_str)
     # Railway sometimes sets DATABASE_URL pointing to a volume not yet mounted
     # — ensure the directory exists so SQLite can create the file

@@ -7,11 +7,13 @@ O token deve ser enviado no header ``Authorization: Bearer <token>``
 em todas as requisições a rotas protegidas.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import ExpiredSignatureError, InvalidTokenError, decode as jwt_decode, encode as jwt_encode
+from jwt import ExpiredSignatureError, InvalidTokenError
+from jwt import decode as jwt_decode
+from jwt import encode as jwt_encode
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -38,11 +40,11 @@ def criar_token_admin() -> str:
     if not settings.admin_token:
         raise ValueError("ADMIN_TOKEN não configurado — não é possível gerar JWT")
 
-    exp = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    exp = datetime.now(UTC) + timedelta(hours=JWT_EXPIRATION_HOURS)
     payload = {
         "sub": "admin",
         "exp": exp,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
     return jwt_encode(payload, settings.admin_token, algorithm=JWT_ALGORITHM)
 

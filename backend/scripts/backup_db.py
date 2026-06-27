@@ -36,7 +36,7 @@ def _find_db_file() -> Path | None:
     # Também verifica variável de ambiente
     db_url = os.getenv("DATABASE_URL", "")
     if db_url.startswith("sqlite+aiosqlite:///"):
-        path_str = db_url[len("sqlite+aiosqlite:///"):]
+        path_str = db_url[len("sqlite+aiosqlite:///") :]
         candidates.insert(0, Path(path_str))
 
     for p in candidates:
@@ -118,13 +118,22 @@ def main():
     parser = argparse.ArgumentParser(description="Backup do banco SQLite do Mão na Massa")
     parser.add_argument("--output", "-o", type=Path, help="Caminho do arquivo de destino")
     parser.add_argument("--gzip", "-z", action="store_true", help="Compactar com gzip")
-    parser.add_argument("--keep", "-k", type=int, default=7, help="Manter apenas N backups mais recentes (0 = manter todos)")
+    parser.add_argument(
+        "--keep",
+        "-k",
+        type=int,
+        default=7,
+        help="Manter apenas N backups mais recentes (0 = manter todos)",
+    )
     args = parser.parse_args()
 
     source = _find_db_file()
     if not source:
         print("❌ Arquivo do banco SQLite não encontrado.", file=sys.stderr)
-        print("   Verifique se DATABASE_URL está configurada ou o arquivo .db existe.", file=sys.stderr)
+        print(
+            "   Verifique se DATABASE_URL está configurada ou o arquivo .db existe.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     _backup(source, args.output, args.gzip, args.keep)

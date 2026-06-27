@@ -23,10 +23,14 @@ class SiteConfig(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     chave: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     valor: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    tipo: Mapped[str] = mapped_column(String(20), nullable=False, default="text")  # text, image, url, json
+    tipo: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="text"
+    )  # text, image, url, json
     grupo: Mapped[str] = mapped_column(String(50), nullable=False, default="geral")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self) -> str:
         return f"<SiteConfig {self.chave}={self.valor[:40]}>"

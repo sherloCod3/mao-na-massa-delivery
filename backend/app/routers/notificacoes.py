@@ -21,11 +21,7 @@ async def listar_notificacoes(
     session: AsyncSession = Depends(get_session),
 ):
     """Lista notificações, ordenadas da mais recente para a mais antiga."""
-    query = (
-        select(Notificacao)
-        .order_by(Notificacao.created_at.desc())
-        .limit(limite)
-    )
+    query = select(Notificacao).order_by(Notificacao.created_at.desc()).limit(limite)
     if apenas_nao_lidas:
         query = query.where(Notificacao.lida.is_(False))
 
@@ -48,11 +44,7 @@ async def marcar_como_lida(
     session: AsyncSession = Depends(get_session),
 ):
     """Marca uma notificação como lida."""
-    stmt = (
-        update(Notificacao)
-        .where(Notificacao.id == notificacao_id)
-        .values(lida=True)
-    )
+    stmt = update(Notificacao).where(Notificacao.id == notificacao_id).values(lida=True)
     await session.execute(stmt)
     await session.commit()
     return {"ok": True}
@@ -63,11 +55,7 @@ async def marcar_todas_como_lidas(
     session: AsyncSession = Depends(get_session),
 ):
     """Marca todas as notificações como lidas."""
-    stmt = (
-        update(Notificacao)
-        .where(Notificacao.lida.is_(False))
-        .values(lida=True)
-    )
+    stmt = update(Notificacao).where(Notificacao.lida.is_(False)).values(lida=True)
     await session.execute(stmt)
     await session.commit()
     return {"ok": True}

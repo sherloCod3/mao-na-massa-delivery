@@ -23,7 +23,4 @@ async def listar_configuracoes_publicas(
         query = query.where(SiteConfig.grupo == grupo)
     result = await session.execute(query)
     configs = result.scalars().all()
-    return [
-        SiteConfigPublicResponse(chave=c.chave, valor=c.valor, tipo=c.tipo)
-        for c in configs
-    ]
+    return [SiteConfigPublicResponse(chave=c.chave, valor=c.valor, tipo=c.tipo) for c in configs]

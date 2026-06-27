@@ -1,11 +1,9 @@
 """Serviço de notificações — Telegram Bot API + banco in-app."""
 
 import logging
-
-import httpx
-
 from urllib.parse import quote
 
+import httpx
 from app.config import settings
 from app.database import async_session
 from app.models.notificacao import Notificacao
@@ -52,12 +50,15 @@ async def _telegram_send(text: str) -> bool:
     try:
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(url, json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            })
+            resp = await client.post(
+                url,
+                json={
+                    "chat_id": chat_id,
+                    "text": text,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True,
+                },
+            )
         if resp.status_code != 200:
             logger.error("Telegram API error: %s — %s", resp.status_code, resp.text)
             return False

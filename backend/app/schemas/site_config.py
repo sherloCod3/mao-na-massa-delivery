@@ -30,6 +30,7 @@ class SiteConfigResponse(BaseModel):
 
 class SiteConfigPublicResponse(BaseModel):
     """Versão simplificada para a API pública — só chave → valor."""
+
     chave: str
     valor: str
     tipo: str

@@ -1,0 +1,57 @@
+name: QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend QA (Ruff + Bandit + Pylint + Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --no-dev
+
+      - name: Ruff lint
+        run: uv run ruff check app/ scripts/
+
+      - name: Ruff format check
+        run: uv run ruff format --check app/ scripts/
+
+      - name: Bandit security check
+        run: uv run bandit -c pyproject.toml -r app/
+
+      - name: Pylint
+        run: uv run pylint app/
+
+      - name: Run tests
+        run: uv run python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml
+        env:
+          ADMIN_TOKEN: test-token
+          ENVIRONMENT: test
+
+      - name: SonarQube Scan
+        if: github.actor != 'dependabot[bot]'
+        uses: sonarsource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: backend

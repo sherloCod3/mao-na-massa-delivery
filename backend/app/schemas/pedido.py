@@ -60,6 +60,7 @@ class PedidoResponse(BaseModel):
 
 class PedidoTrackingResponse(BaseModel):
     """Public-facing tracking info — no sensitive data."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

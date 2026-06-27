@@ -1,10 +1,8 @@
 import json
-from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.auth import verify_admin
 from app.database import get_session
@@ -52,7 +50,9 @@ async def resumo_lista(session: AsyncSession = Depends(get_session)):
     )
 
 
-@router.post("/lista-compras", response_model=ListaCompraItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/lista-compras", response_model=ListaCompraItemResponse, status_code=status.HTTP_201_CREATED
+)
 async def criar_item(
     data: ListaCompraItemCreate,
     session: AsyncSession = Depends(get_session),
@@ -131,9 +131,7 @@ async def sugerir_ingredientes(session: AsyncSession = Depends(get_session)):
 
 @router.get("/lista-compras/salvas", response_model=list[ListaSalvaResumo])
 async def listar_salvas(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        select(ListaSalva).order_by(ListaSalva.created_at.desc())
-    )
+    result = await session.execute(select(ListaSalva).order_by(ListaSalva.created_at.desc()))
     salvas = result.scalars().all()
     return [
         ListaSalvaResumo(
@@ -146,15 +144,15 @@ async def listar_salvas(session: AsyncSession = Depends(get_session)):
     ]
 
 
-@router.post("/lista-compras/salvar", response_model=ListaSalvaResumo, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/lista-compras/salvar", response_model=ListaSalvaResumo, status_code=status.HTTP_201_CREATED
+)
 async def salvar_lista(
     data: ListaSalvaCreate,
     session: AsyncSession = Depends(get_session),
 ):
     """Salva a lista atual como template (copia itens pendentes)."""
-    result = await session.execute(
-        select(ListaCompraItem).order_by(ListaCompraItem.nome)
-    )
+    result = await session.execute(select(ListaCompraItem).order_by(ListaCompraItem.nome))
     itens = result.scalars().all()
     if not itens:
         raise ValidationError("Lista vazia — adicione itens antes de salvar")

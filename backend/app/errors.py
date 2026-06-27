@@ -151,7 +151,9 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         except AppError as exc:
             logger.warning(
                 "AppError [%s]: %s | details=%s",
-                exc.code, exc.message, exc.details,
+                exc.code,
+                exc.message,
+                exc.details,
             )
             return error_response(
                 request=request,

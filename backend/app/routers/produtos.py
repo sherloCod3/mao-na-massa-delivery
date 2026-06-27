@@ -51,11 +51,7 @@ async def obter_produto(
     produto_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    query = (
-        select(Produto)
-        .options(selectinload(Produto.variacoes))
-        .where(Produto.id == produto_id)
-    )
+    query = select(Produto).options(selectinload(Produto.variacoes)).where(Produto.id == produto_id)
     result = await session.execute(query)
     produto = result.scalar_one_or_none()
     if not produto:
