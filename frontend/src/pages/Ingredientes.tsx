@@ -5,6 +5,7 @@ import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Ingrediente, MovimentacaoEstoque } from '../api/client'
 import PageHeader from '../components/PageHeader'
+import AutocompleteIngrediente from '../components/AutocompleteIngrediente'
 
 export default function Ingredientes() {
   const { toast } = useToast()
@@ -19,6 +20,7 @@ export default function Ingredientes() {
   const [movForm, setMovForm] = useState<{ open: boolean; id: number; nome: string; tipo: 'entrada' | 'saida'; quantidade: number; motivo: string }>({
     open: false, id: 0, nome: '', tipo: 'entrada', quantidade: 0, motivo: '',
   })
+  const [movIngSearch, setMovIngSearch] = useState('')
   const [histModal, setHistModal] = useState<{ open: boolean; nome: string; movs: MovimentacaoEstoque[] }>({
     open: false, nome: '', movs: [],
   })
@@ -83,6 +85,7 @@ export default function Ingredientes() {
 
   const openMovForm = (item: Ingrediente, tipo: 'entrada' | 'saida') => {
     setMovForm({ open: true, id: item.id, nome: item.nome, tipo, quantidade: 0, motivo: '' })
+    setMovIngSearch(item.nome) // Pré-preenche o autocomplete
   }
 
   const handleMovSubmit = async (e: React.FormEvent) => {
@@ -330,19 +333,40 @@ export default function Ingredientes() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">
-                {movForm.tipo === 'entrada' ? '📦 Dar Entrada' : '📤 Dar Saída'} — {movForm.nome}
+                {movForm.tipo === 'entrada' ? '📦 Dar Entrada' : '📤 Dar Saída'}
               </h2>
               <button onClick={() => setMovForm({ ...movForm, open: false })} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleMovSubmit} className="space-y-4">
+              {/* Autocomplete para selecionar ingrediente */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ingrediente</label>
+                <AutocompleteIngrediente
+                  value={movIngSearch}
+                  onChange={setMovIngSearch}
+                  placeholder="Buscar ingrediente..."
+                  autoFocus
+                  onSelect={ing => {
+                    setMovForm(prev => ({ ...prev, id: ing.id, nome: ing.nome }))
+                    setMovIngSearch(ing.nome)
+                  }}
+                />
+                {movForm.id > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selecionado: <strong>{movForm.nome}</strong>
+                    {' — '}ID: {movForm.id}
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Quantidade {movForm.tipo === 'entrada' ? 'a adicionar' : 'a remover'}
                 </label>
                 <input
-                  type="number" step="0.01" min="0" required autoFocus
+                  type="number" step="0.01" min="0" required
                   className="w-full border rounded-lg px-3 py-2 text-lg"
                   value={movForm.quantidade || ''}
                   onChange={e => setMovForm({ ...movForm, quantidade: parseFloat(e.target.value) || 0 })}
@@ -359,8 +383,8 @@ export default function Ingredientes() {
                 />
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit"
-                  className={`flex-1 py-2 rounded-lg text-white font-medium ${
+                <button type="submit" disabled={!movForm.id}
+                  className={`flex-1 py-2 rounded-lg text-white font-medium disabled:opacity-50 ${
                     movForm.tipo === 'entrada'
                       ? 'bg-green-600 hover:bg-green-700'
                       : 'bg-orange-600 hover:bg-orange-700'

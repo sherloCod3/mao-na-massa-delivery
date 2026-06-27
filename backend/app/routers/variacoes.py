@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.errors import NotFoundError
 from app.models.ingrediente import Ingrediente
@@ -16,7 +17,10 @@ from app.schemas.receita import (
 )
 from app.schemas.variacao import VariacaoCreate, VariacaoResponse, VariacaoUpdate
 
-router = APIRouter(tags=["Variações"])
+router = APIRouter(
+    tags=["Variações"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 # ─── Variações ───────────────────────────────────────────────────────────────

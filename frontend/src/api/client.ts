@@ -21,6 +21,20 @@ export interface NotificacaoResponse {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1'
 
+// ─── Token de autenticação ──────────────────────────────────────
+const AUTH_KEY = 'mao_na_massa_admin_token'
+
+function getAuthHeaders(): Record<string, string> {
+  try {
+    const token = localStorage.getItem(AUTH_KEY)
+    if (token) return { Authorization: `Bearer ${token}` }
+  } catch {
+    // localStorage pode estar indisponível (SSR, quota excedida, privacy mode)
+    // — ignora silenciosamente, requisição segue sem auth
+  }
+  return {}
+}
+
 // ─── Retry Configuration ─────────────────────────────────────────
 
 const MAX_RETRIES = 2
@@ -45,7 +59,11 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(`${API_BASE}${url}`, {
-        headers: { 'Content-Type': 'application/json', ...options?.headers },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+          ...options?.headers,
+        },
         ...options,
       })
 
@@ -71,6 +89,12 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
         const apiError = new ApiError(message, code, res.status, requestId, details)
 
+        // Auto-logout on 401 — token expirado ou inválido
+        if (res.status === 401 && !url.includes('/admin/login')) {
+          localStorage.removeItem(AUTH_KEY)
+          window.dispatchEvent(new CustomEvent('auth:logout'))
+        }
+
         // Retry? — only for idempotent GET requests
         if (options?.method === 'GET' && attempt < MAX_RETRIES && shouldRetry(res.status, message)) {
           await delay(RETRY_DELAY_MS * (attempt + 1))
@@ -81,7 +105,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
         throw apiError
       }
 
-      if (res.status === 204) return undefined as T
+      if (res.status === 204) return undefined as unknown as T
       return res.json()
     } catch (err) {
       // Retry network errors for GET requests
@@ -95,7 +119,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
       // When offline and this is a write operation (POST/PUT/DELETE), queue it
       const method = options?.method || 'GET'
       if (!navigator.onLine && method !== 'GET') {
-        const body = options?.body ? JSON.parse(options.body as string) : undefined
+        const rawBody = options?.body
+        const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : undefined
         await enfileirarMutacao({
           method,
           endpoint: url,
@@ -287,7 +312,13 @@ export interface CustoVariacao {
 // ─── API methods ─────────────────────────────────────────────────
 
 export const ingredientesApi = {
-  listar: () => request<Ingrediente[]>('/ingredientes'),
+  listar: (search?: string, limite?: number) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (limite) params.set('limite', String(limite))
+    const qs = params.toString()
+    return request<Ingrediente[]>(`/ingredientes${qs ? `?${qs}` : ''}`)
+  },
   criar: (data: Partial<Ingrediente>) => request<Ingrediente>('/ingredientes', { method: 'POST', body: JSON.stringify(data) }),
   atualizar: (id: number, data: Partial<Ingrediente>) => request<Ingrediente>(`/ingredientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   desativar: (id: number) => request<void>(`/ingredientes/${id}`, { method: 'DELETE' }),
@@ -298,7 +329,13 @@ export const ingredientesApi = {
 }
 
 export const produtosApi = {
-  listar: () => request<Produto[]>('/produtos'),
+  listar: (search?: string, limite?: number) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (limite) params.set('limite', String(limite))
+    const qs = params.toString()
+    return request<Produto[]>(`/produtos${qs ? `?${qs}` : ''}`)
+  },
   criar: (data: Partial<Produto>) => request<Produto>('/produtos', { method: 'POST', body: JSON.stringify(data) }),
   obter: (id: number) => request<Produto>(`/produtos/${id}`),
 }
@@ -359,6 +396,80 @@ export const notificacoesApi = {
     request<{ ok: boolean }>(`/notificacoes/${id}/ler`, { method: 'POST' }),
   marcarTodasLidas: () =>
     request<{ ok: boolean }>('/notificacoes/ler-todas', { method: 'POST' }),
+}
+
+// ─── Site Config & Testimonials (Fase B - CMS) ────────────────────────
+
+/** Response da API pública — só dados essenciais */
+export interface SiteConfigItem {
+  chave: string
+  valor: string
+  tipo: string
+}
+
+/** Response da API admin — inclui metadados */
+export interface SiteConfigAdmin extends SiteConfigItem {
+  id: number
+  grupo: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TestimonialPublic {
+  id: number
+  cliente_nome: string
+  texto: string
+  nota: number | null
+  foto_url: string | null
+  destaque: boolean
+  created_at: string
+}
+
+export interface TestimonialAdmin {
+  id: number
+  cliente_nome: string
+  texto: string
+  nota: number | null
+  foto_url: string | null
+  status: string
+  destaque: boolean
+  created_at: string
+  updated_at: string
+}
+
+export const publicoApi = {
+  /** Landing page: busca todas as configs do site */
+  siteConfig: (grupo?: string) => {
+    const params = grupo ? `?grupo=${grupo}` : ''
+    return request<SiteConfigItem[]>(`/publico/site-config${params}`)
+  },
+  /** Landing page: depoimentos aprovados */
+  testimonials: () => request<TestimonialPublic[]>('/publico/testimonials'),
+  /** Cliente envia depoimento (cria como pendente) */
+  enviarTestimonial: (data: { cliente_nome: string; texto: string; nota?: number }) =>
+    request<TestimonialPublic>('/publico/testimonials', { method: 'POST', body: JSON.stringify(data) }),
+}
+
+export const adminSiteConfigApi = {
+  listar: (grupo?: string) => {
+    const params = grupo ? `?grupo=${grupo}` : ''
+    return request<SiteConfigAdmin[]>(`/admin/site-config${params}`)
+  },
+  criar: (data: { chave: string; valor: string; tipo?: string; grupo?: string }) =>
+    request<SiteConfigAdmin>('/admin/site-config', { method: 'POST', body: JSON.stringify(data) }),
+  atualizar: (chave: string, data: { valor?: string; tipo?: string; grupo?: string }) =>
+    request<SiteConfigAdmin>(`/admin/site-config/${chave}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletar: (chave: string) => request<void>(`/admin/site-config/${chave}`, { method: 'DELETE' }),
+}
+
+export const adminTestimonialsApi = {
+  listar: (statusFilter?: string) => {
+    const params = statusFilter ? `?status_filter=${statusFilter}` : ''
+    return request<TestimonialAdmin[]>(`/admin/testimonials${params}`)
+  },
+  atualizar: (id: number, data: { status?: string; destaque?: boolean; cliente_nome?: string; texto?: string }) =>
+    request<TestimonialAdmin>(`/admin/testimonials/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletar: (id: number) => request<void>(`/admin/testimonials/${id}`, { method: 'DELETE' }),
 }
 
 export const listaComprasApi = {

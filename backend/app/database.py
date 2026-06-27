@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.base import Base
@@ -26,6 +27,25 @@ def _ensure_db_dir(db_url: str) -> str:
 
 
 engine = create_async_engine(_ensure_db_dir(settings.database_url), echo=False)
+
+
+@event.listens_for(engine.sync_engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, _connection_record):
+    """Ativa WAL mode e ajusta parâmetros de resiliência do SQLite.
+
+    - WAL: permite leitura concorrente durante escritas, reduz corrupção
+    - synchronous=NORMAL: equilibrio segurança/performance no WAL
+    - busy_timeout=5000: espera 5s antes de falhar em lock
+    - foreign_keys=ON: garante integridade referencial
+    """
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

@@ -8,6 +8,8 @@ from app.models.item_pedido import ItemPedido
 from app.models.lista_compras import ListaCompraItem, ListaSalva
 from app.models.movimentacao_estoque import MovimentacaoEstoque
 from app.models.notificacao import Notificacao
+from app.models.site_config import SiteConfig
+from app.models.testimonial import Testimonial
 
 __all__ = [
     "Ingrediente",
@@ -21,4 +23,6 @@ __all__ = [
     "ListaSalva",
     "Notificacao",
     "MovimentacaoEstoque",
+    "SiteConfig",
+    "Testimonial",
 ]

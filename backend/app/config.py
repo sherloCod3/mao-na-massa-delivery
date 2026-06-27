@@ -22,6 +22,20 @@ class Settings(BaseSettings):
     evolution_api_url: str = ""  # ex: http://localhost:8080
     evolution_api_key: str = ""  # ex: mao-na-massa-key
 
+    # ─── Ambiente ──────────────────────────────────────────
+    environment: str = "development"  # "development" | "production"
+
+    # ─── Hosts permitidos (TrustedHostMiddleware) ────────────
+    # Separados por vírgula. Use "*" para aceitar qualquer host (dev).
+    allowed_hosts: str = "*"
+
+    # ─── CSP (Content Security Policy) ───────────────────────
+    # Custom CSP string. Se vazio, usa o padrão seguro.
+    csp_policy: str = ""
+
+    # ─── Autenticação Admin ────────────────────────────────
+    admin_token: str = ""  # Se vazio, auth fica desabilitada (útil em dev)
+
     # ─── App (para links nas notificações) ───────────────────
     app_url: str = "http://localhost:5173"
 

@@ -103,7 +103,11 @@ export async function obterFilaPendente(): Promise<number> {
 async function registrarBackgroundSync() {
   try {
     const reg = await navigator.serviceWorker.ready
-    await (reg as any).sync.register('sync-mutations')
+    // SyncManager pode não estar disponível em todos os browsers
+    if ('sync' in reg) {
+      const syncManager = (reg as unknown as { sync: { register(tag: string): Promise<void> } }).sync
+      await syncManager.register('sync-mutations')
+    }
   } catch {
     // Background Sync not supported — online event will handle it
   }

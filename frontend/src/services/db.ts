@@ -50,6 +50,10 @@ class MaoNaMassaDB extends Dexie {
     })
     this.version(2).stores({
       filaMutacoes: '++id, createdAt, entityType',
+    }).upgrade(tx => {
+      // v2: adiciona tabela filaMutacoes — dados das tabelas v1
+      // são preservados automaticamente pelo Dexie
+      console.log('[DB] Upgrading to v2: added filaMutacoes table')
     })
   }
 }
@@ -74,10 +78,11 @@ export async function getCachedOrFetch<T>(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyTable = Table<any, any, any>
+// Aceita qualquer tabela Dexie para limpeza de cache — seguro pois
+// só chamamos .clear() que existe em todas as tabelas
+type CacheTable = Table<{ key: string; data: unknown; updatedAt: number }, string, number>
 
-export async function invalidateCache(...tables: AnyTable[]): Promise<void> {
+export async function invalidateCache(...tables: CacheTable[]): Promise<void> {
   await Promise.all(tables.map(t => t.clear()))
 }
 

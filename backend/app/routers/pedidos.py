@@ -2,11 +2,12 @@ import asyncio
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import limiter, verify_admin
 from app.database import get_session
 from app.errors import NotFoundError, ValidationError
 from app.models.item_pedido import ItemPedido
@@ -89,6 +90,7 @@ async def listar_pedidos(
     data_inicio: date | None = None,
     data_fim: date | None = None,
     session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
 ):
     query = (
         select(Pedido)
@@ -108,7 +110,9 @@ async def listar_pedidos(
 
 
 @router.post("", response_model=PedidoResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def criar_pedido(
+    request: Request,
     data: PedidoCreate,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
@@ -165,6 +169,7 @@ async def criar_pedido(
 async def obter_pedido(
     pedido_id: int,
     session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
 ):
     query = (
         select(Pedido)
@@ -184,6 +189,7 @@ async def atualizar_status_pedido(
     data: PedidoUpdateStatus,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
 ):
     query = (
         select(Pedido)
@@ -224,6 +230,7 @@ async def atualizar_status_pedido(
 async def cancelar_pedido(
     pedido_id: int,
     session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
 ):
     query = (
         select(Pedido)

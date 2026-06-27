@@ -26,7 +26,7 @@ export default function EstoqueChart() {
           <Package className="w-5 h-5 text-massa-500" />
           Nível de Estoque
         </h2>
-        <a href="/ingredientes" className="text-xs text-massa-600 hover:text-massa-700 underline">
+        <a href="/admin/ingredientes" className="text-xs text-massa-600 hover:text-massa-700 underline">
           Gerenciar
         </a>
       </div>

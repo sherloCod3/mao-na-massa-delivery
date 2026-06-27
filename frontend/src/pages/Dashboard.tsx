@@ -76,7 +76,7 @@ function EstoqueBaixoAlert() {
           <p className="font-medium text-red-800 text-sm">
             <strong>{baixo.length}</strong> ingrediente{baixo.length > 1 ? 's' : ''} com estoque baixo
           </p>
-          <a href="/ingredientes" className="text-xs text-red-700 hover:text-red-900 underline">
+          <a href="/admin/ingredientes" className="text-xs text-red-700 hover:text-red-900 underline">
             Gerenciar
           </a>
         </div>

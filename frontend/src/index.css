@@ -247,3 +247,14 @@
 .animate-slide-in {
   animation: slide-in 0.25s ease-out;
 }
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

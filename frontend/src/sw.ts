@@ -50,8 +50,15 @@ registerRoute(
 
 // ── Background Sync handler ──────────────────────────────────────
 
+// Interface portável para SyncEvent — não depende da disponibilidade
+// do tipo global SyncEvent (Background Sync API experimental)
+interface SyncEventLike extends ExtendableEvent {
+  tag: string
+  waitUntil(p: Promise<unknown>): void
+}
+
 self.addEventListener('sync', (event) => {
-  const syncEvent = event as unknown as { tag: string; waitUntil(p: Promise<unknown>): void }
+  const syncEvent = event as SyncEventLike
   if (syncEvent.tag === 'sync-mutations') {
     syncEvent.waitUntil(notifyClientsToSync())
   }
@@ -61,6 +68,47 @@ async function notifyClientsToSync() {
   const clients = await self.clients.matchAll({ type: 'window' })
   for (const client of clients) {
     client.postMessage({ type: 'PROCESS_MUTATIONS' })
+  }
+}
+
+// ── Message handler: clear auth cache on logout (TM-005) ────────
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'CLEAR_AUTH_CACHE') {
+    event.waitUntil(clearAuthCache())
+  }
+})
+
+/** Retorna true se a URL parece ser de uma rota admin (não pública) */
+function _isAdminRoute(url: string): boolean {
+  // Rotas públicas conhecidas — mantém cache
+  if (url.includes('/api/v1/publico/')) return false
+  if (url.includes('/api/v1/admin/login')) return false
+  // Qualquer outra rota /api/v1/ pode conter dados admin
+  return url.includes('/api/v1/')
+}
+
+async function clearAuthCache() {
+  const cacheNames = ['api-cache']
+  const opening = cacheNames.map(name => caches.open(name))
+  const cachesToClear = await Promise.all(opening)
+
+  await Promise.all(
+    cachesToClear.map(cache =>
+      cache.keys().then(requests =>
+        Promise.all(
+          requests
+            .filter(r => _isAdminRoute(r.url))
+            .map(r => cache.delete(r))
+        )
+      )
+    )
+  )
+
+  // Notifica as janelas que o cache foi limpo
+  const clients = await self.clients.matchAll({ type: 'window' })
+  for (const client of clients) {
+    client.postMessage({ type: 'AUTH_CACHE_CLEARED' })
   }
 }
 

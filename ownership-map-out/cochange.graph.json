@@ -1,0 +1,902 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "community_maintainers": [
+      {
+        "id": 1,
+        "size": 13,
+        "maintainers": [
+          {
+            "person_id": "alexandre.cavalari@outlook.com",
+            "name": "Alexandre Cavalari",
+            "touches": 41,
+            "touch_share": 0.7736,
+            "recency_share": 0.7754,
+            "sensitive_share": 0.0,
+            "primary_tz_offset": "-03:00"
+          },
+          {
+            "person_id": "sherlocod3@users.noreply.github.com",
+            "name": "sherloCod3",
+            "touches": 12,
+            "touch_share": 0.2264,
+            "recency_share": 0.2246,
+            "sensitive_share": 0.0,
+            "primary_tz_offset": "-03:00"
+          }
+        ],
+        "bus_factor": 2,
+        "owner_count": 2,
+        "totals": {
+          "touches": 53,
+          "recency_weight": 52.400452,
+          "sensitive_weight": 0
+        }
+      },
+      {
+        "id": 2,
+        "size": 11,
+        "maintainers": [
+          {
+            "person_id": "alexandre.cavalari@outlook.com",
+            "name": "Alexandre Cavalari",
+            "touches": 40,
+            "touch_share": 0.7843,
+            "recency_share": 0.786,
+            "sensitive_share": 0.0,
+            "primary_tz_offset": "-03:00"
+          },
+          {
+            "person_id": "sherlocod3@users.noreply.github.com",
+            "name": "sherloCod3",
+            "touches": 11,
+            "touch_share": 0.2157,
+            "recency_share": 0.214,
+            "sensitive_share": 0.0,
+            "primary_tz_offset": "-03:00"
+          }
+        ],
+        "bus_factor": 2,
+        "owner_count": 2,
+        "totals": {
+          "touches": 51,
+          "recency_weight": 50.424806,
+          "sensitive_weight": 0
+        }
+      },
+      {
+        "id": 3,
+        "size": 2,
+        "maintainers": [
+          {
+            "person_id": "sherlocod3@users.noreply.github.com",
+            "name": "sherloCod3",
+            "touches": 9,
+            "touch_share": 1.0,
+            "recency_share": 1.0,
+            "sensitive_share": 0.0,
+            "primary_tz_offset": "-03:00"
+          }
+        ],
+        "bus_factor": 1,
+        "owner_count": 1,
+        "totals": {
+          "touches": 9,
+          "recency_weight": 8.828908,
+          "sensitive_weight": 0
+        }
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "community_id": 1,
+      "id": "backend/app/main.py"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/routers/ingredientes.py"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/routers/pedidos.py"
+    },
+    {
+      "community_id": 1,
+      "id": "frontend/src/App.tsx"
+    },
+    {
+      "community_id": 1,
+      "id": "frontend/src/api/client.ts"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/routers/publico.py"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/package.json"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/components/Layout.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/index.css"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/vite.config.ts"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "community_id": 1,
+      "id": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "community_id": 1,
+      "id": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/config.py"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/models/__init__.py"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/services/notificador.py"
+    },
+    {
+      "community_id": 1,
+      "id": "backend/app/models/ingrediente.py"
+    },
+    {
+      "community_id": 1,
+      "id": "frontend/src/pages/PublicTracking.tsx"
+    },
+    {
+      "community_id": 2,
+      "id": "frontend/src/services/db.ts"
+    },
+    {
+      "community_id": 3,
+      "id": "backend/railway.json"
+    },
+    {
+      "community_id": 3,
+      "id": "frontend/railway.json"
+    }
+  ],
+  "edges": [
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/main.py",
+      "target": "backend/app/routers/ingredientes.py"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "backend/app/main.py",
+      "target": "backend/app/routers/pedidos.py"
+    },
+    {
+      "weight": 1.0,
+      "count": 2,
+      "source": "backend/app/main.py",
+      "target": "frontend/src/App.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "backend/app/main.py",
+      "target": "frontend/src/api/client.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/routers/pedidos.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/routers/publico.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "frontend/src/App.tsx"
+    },
+    {
+      "weight": 0.714286,
+      "count": 5,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "frontend/src/api/client.ts"
+    },
+    {
+      "weight": 0.375,
+      "count": 3,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.571429,
+      "count": 4,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/config.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/models/__init__.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/models/ingrediente.py"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "backend/app/routers/ingredientes.py",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "backend/app/routers/pedidos.py",
+      "target": "frontend/src/App.tsx"
+    },
+    {
+      "weight": 0.25,
+      "count": 2,
+      "source": "backend/app/routers/pedidos.py",
+      "target": "frontend/src/api/client.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "backend/app/routers/pedidos.py",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "backend/app/routers/pedidos.py",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/App.tsx",
+      "target": "frontend/src/api/client.ts"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "backend/app/routers/publico.py"
+    },
+    {
+      "weight": 0.444444,
+      "count": 4,
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.444444,
+      "count": 4,
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.375,
+      "count": 3,
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "backend/app/config.py"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "backend/app/models/__init__.py"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "backend/app/models/ingrediente.py"
+    },
+    {
+      "weight": 0.25,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.181818,
+      "count": 2,
+      "source": "frontend/src/api/client.ts",
+      "target": "frontend/package.json"
+    },
+    {
+      "weight": 0.666667,
+      "count": 4,
+      "source": "frontend/package.json",
+      "target": "frontend/src/components/Layout.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/index.css"
+    },
+    {
+      "weight": 0.666667,
+      "count": 4,
+      "source": "frontend/package.json",
+      "target": "frontend/vite.config.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 4,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.333333,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/package.json",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/package.json",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.25,
+      "count": 2,
+      "source": "frontend/package.json",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/index.css"
+    },
+    {
+      "weight": 1.0,
+      "count": 4,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/vite.config.ts"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.6,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/components/Layout.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/index.css",
+      "target": "frontend/vite.config.ts"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/index.css",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/Dashboard.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.6,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/vite.config.ts",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.714286,
+      "count": 5,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/Ingredientes.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Dashboard.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/ListaCompras.tsx"
+    },
+    {
+      "weight": 0.428571,
+      "count": 3,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 3,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.666667,
+      "count": 4,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "backend/app/config.py"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "backend/app/models/__init__.py"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "backend/app/models/ingrediente.py"
+    },
+    {
+      "weight": 0.285714,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/pages/PublicTracking.tsx"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/Ingredientes.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/pages/PedidoDetalhe.tsx"
+    },
+    {
+      "weight": 1.0,
+      "count": 3,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 1.0,
+      "count": 3,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/pages/ListaCompras.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "frontend/src/pages/PedidoNovo.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 0.75,
+      "count": 3,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.333333,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoDetalhe.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoNovo.tsx",
+      "target": "frontend/src/pages/Pedidos.tsx"
+    },
+    {
+      "weight": 1.0,
+      "count": 3,
+      "source": "frontend/src/pages/PedidoNovo.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoNovo.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/pages/PedidoNovo.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/pages/Pedidos.tsx",
+      "target": "frontend/src/pages/Produtos.tsx"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "frontend/src/pages/Produtos.tsx",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/pages/Produtos.tsx",
+      "target": "frontend/src/services/offlineClient.ts"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/services/offlineClient.ts",
+      "target": "backend/app/config.py"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/services/offlineClient.ts",
+      "target": "backend/app/models/__init__.py"
+    },
+    {
+      "weight": 0.4,
+      "count": 2,
+      "source": "frontend/src/services/offlineClient.ts",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/services/offlineClient.ts",
+      "target": "frontend/src/pages/PublicTracking.tsx"
+    },
+    {
+      "weight": 0.5,
+      "count": 2,
+      "source": "frontend/src/services/offlineClient.ts",
+      "target": "frontend/src/services/db.ts"
+    },
+    {
+      "weight": 1.0,
+      "count": 2,
+      "source": "backend/app/config.py",
+      "target": "backend/app/models/__init__.py"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "backend/app/config.py",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "backend/app/models/__init__.py",
+      "target": "backend/app/services/notificador.py"
+    },
+    {
+      "weight": 0.666667,
+      "count": 2,
+      "source": "backend/railway.json",
+      "target": "frontend/railway.json"
+    }
+  ]
+}

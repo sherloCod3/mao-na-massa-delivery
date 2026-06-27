@@ -1,24 +1,35 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.errors import NotFoundError
 from app.models.produto import Produto
 from app.schemas.produto import ProdutoCreate, ProdutoResponse, ProdutoUpdate
 
-router = APIRouter(prefix="/produtos", tags=["Produtos"])
+router = APIRouter(
+    prefix="/produtos",
+    tags=["Produtos"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 @router.get("", response_model=list[ProdutoResponse])
 async def listar_produtos(
     apenas_ativos: bool = True,
+    search: str | None = Query(None, min_length=1),
+    limite: int | None = Query(None, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
 ):
     query = select(Produto).options(selectinload(Produto.variacoes)).order_by(Produto.nome)
     if apenas_ativos:
         query = query.where(Produto.ativo.is_(True))
+    if search:
+        query = query.where(Produto.nome.ilike(f"%{search}%"))
+    if limite:
+        query = query.limit(limite)
     result = await session.execute(query)
     return result.scalars().all()
 

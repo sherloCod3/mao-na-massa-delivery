@@ -1,0 +1,3 @@
+person_id,name,email,first_seen,last_seen,commit_count,touches,sensitive_touches,primary_tz_offset,primary_tz_minutes,timezone_offsets
+alexandre.cavalari@outlook.com,Alexandre Cavalari,alexandre.cavalari@outlook.com,2026-06-24T12:19:58-03:00,2026-06-24T16:09:22-03:00,10,134,0.00,-03:00,-180,-03:00:10
+sherlocod3@users.noreply.github.com,sherloCod3,sherlocod3@users.noreply.github.com,2026-06-21T22:49:08-03:00,2026-06-23T00:21:07-03:00,13,90,0.00,-03:00,-180,-03:00:13

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.errors import NotFoundError, ValidationError
 from app.models.ingrediente import Ingrediente
@@ -20,7 +21,10 @@ from app.schemas.lista_compras import (
     SugestaoIngrediente,
 )
 
-router = APIRouter(tags=["Lista de Compras"])
+router = APIRouter(
+    tags=["Lista de Compras"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 # ─── Itens ─────────────────────────────────────────────────────────

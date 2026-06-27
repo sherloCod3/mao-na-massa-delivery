@@ -61,7 +61,7 @@ export default function PedidoDetalhe() {
             {getStatusEmoji(pedido.status)}
           </span>
         }
-        backTo="/pedidos"
+        backTo="/admin/pedidos"
         action={
           <span className={`text-xs px-3 py-1.5 rounded-full border font-medium ${getStatusColor(pedido.status)}`}>
             {getStatusLabel(pedido.status)}

@@ -1,0 +1,118 @@
+[
+  {
+    "id": 1,
+    "size": 13,
+    "files": [
+      "backend/app/config.py",
+      "backend/app/main.py",
+      "backend/app/models/__init__.py",
+      "backend/app/models/ingrediente.py",
+      "backend/app/routers/ingredientes.py",
+      "backend/app/routers/pedidos.py",
+      "backend/app/routers/publico.py",
+      "backend/app/services/notificador.py",
+      "frontend/src/App.tsx",
+      "frontend/src/api/client.ts",
+      "frontend/src/pages/Ingredientes.tsx",
+      "frontend/src/pages/PublicTracking.tsx",
+      "frontend/src/services/offlineClient.ts"
+    ],
+    "maintainers": [
+      {
+        "person_id": "alexandre.cavalari@outlook.com",
+        "name": "Alexandre Cavalari",
+        "touches": 41,
+        "touch_share": 0.7736,
+        "recency_share": 0.7754,
+        "sensitive_share": 0.0,
+        "primary_tz_offset": "-03:00"
+      },
+      {
+        "person_id": "sherlocod3@users.noreply.github.com",
+        "name": "sherloCod3",
+        "touches": 12,
+        "touch_share": 0.2264,
+        "recency_share": 0.2246,
+        "sensitive_share": 0.0,
+        "primary_tz_offset": "-03:00"
+      }
+    ],
+    "bus_factor": 2,
+    "owner_count": 2,
+    "totals": {
+      "touches": 53,
+      "recency_weight": 52.400452,
+      "sensitive_weight": 0
+    }
+  },
+  {
+    "id": 2,
+    "size": 11,
+    "files": [
+      "frontend/package.json",
+      "frontend/src/components/Layout.tsx",
+      "frontend/src/index.css",
+      "frontend/src/pages/Dashboard.tsx",
+      "frontend/src/pages/ListaCompras.tsx",
+      "frontend/src/pages/PedidoDetalhe.tsx",
+      "frontend/src/pages/PedidoNovo.tsx",
+      "frontend/src/pages/Pedidos.tsx",
+      "frontend/src/pages/Produtos.tsx",
+      "frontend/src/services/db.ts",
+      "frontend/vite.config.ts"
+    ],
+    "maintainers": [
+      {
+        "person_id": "alexandre.cavalari@outlook.com",
+        "name": "Alexandre Cavalari",
+        "touches": 40,
+        "touch_share": 0.7843,
+        "recency_share": 0.786,
+        "sensitive_share": 0.0,
+        "primary_tz_offset": "-03:00"
+      },
+      {
+        "person_id": "sherlocod3@users.noreply.github.com",
+        "name": "sherloCod3",
+        "touches": 11,
+        "touch_share": 0.2157,
+        "recency_share": 0.214,
+        "sensitive_share": 0.0,
+        "primary_tz_offset": "-03:00"
+      }
+    ],
+    "bus_factor": 2,
+    "owner_count": 2,
+    "totals": {
+      "touches": 51,
+      "recency_weight": 50.424806,
+      "sensitive_weight": 0
+    }
+  },
+  {
+    "id": 3,
+    "size": 2,
+    "files": [
+      "backend/railway.json",
+      "frontend/railway.json"
+    ],
+    "maintainers": [
+      {
+        "person_id": "sherlocod3@users.noreply.github.com",
+        "name": "sherloCod3",
+        "touches": 9,
+        "touch_share": 1.0,
+        "recency_share": 1.0,
+        "sensitive_share": 0.0,
+        "primary_tz_offset": "-03:00"
+      }
+    ],
+    "bus_factor": 1,
+    "owner_count": 1,
+    "totals": {
+      "touches": 9,
+      "recency_weight": 8.828908,
+      "sensitive_weight": 0
+    }
+  }
+]

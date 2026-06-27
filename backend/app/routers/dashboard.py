@@ -5,6 +5,7 @@ from sqlalchemy import Date, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.models.item_pedido import ItemPedido
 from app.models.pedido import Pedido, StatusPedido
@@ -18,7 +19,11 @@ from app.schemas.dashboard import (
     ProdutoMaisVendido,
 )
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter(
+    prefix="/dashboard",
+    tags=["Dashboard"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 async def _calcular_custo_pedido(pedido: Pedido) -> float:

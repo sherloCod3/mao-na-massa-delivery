@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.errors import NotFoundError, ValidationError
 from app.models.ingrediente import Ingrediente
@@ -14,18 +15,27 @@ from app.models.movimentacao_estoque import MovimentacaoEstoque
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse
 from app.services.notificador import notificar_estoque_baixo
 
-router = APIRouter(prefix="/ingredientes", tags=["Ingredientes"])
+router = APIRouter(
+    prefix="/ingredientes",
+    tags=["Ingredientes"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 @router.get("", response_model=list[IngredienteResponse])
 async def listar_ingredientes(
     apenas_ativos: bool = True,
+    search: str | None = None,
+    limite: int = 20,
     session: AsyncSession = Depends(get_session),
 ):
+    """Lista ingredientes. Opcional: filtra por nome (search) e limita resultados."""
     query = select(Ingrediente).order_by(Ingrediente.nome)
     if apenas_ativos:
         query = query.where(Ingrediente.ativo.is_(True))
-    result = await session.execute(query)
+    if search:
+        query = query.where(Ingrediente.nome.ilike(f"%{search}%"))
+    result = await session.execute(query.limit(limite))
     return result.scalars().all()
 
 

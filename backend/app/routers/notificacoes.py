@@ -2,11 +2,16 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import verify_admin
 from app.database import get_session
 from app.models.notificacao import Notificacao
 from app.schemas.notificacao import NotificacaoNaoLidasResponse, NotificacaoResponse
 
-router = APIRouter(prefix="/notificacoes", tags=["Notificações"])
+router = APIRouter(
+    prefix="/notificacoes",
+    tags=["Notificações"],
+    dependencies=[Depends(verify_admin)],
+)
 
 
 @router.get("", response_model=NotificacaoNaoLidasResponse)

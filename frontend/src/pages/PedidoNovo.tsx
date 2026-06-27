@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, ShoppingBag } from 'lucide-react'
+import { Trash2, ShoppingBag, Package } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import AutocompleteProduto from '../components/AutocompleteProduto'
 import { pedidosApi } from '../api/client'
-import { listarProdutosOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Produto, Variacao } from '../api/client'
@@ -19,11 +19,10 @@ interface ItemPedido {
 export default function PedidoNovo() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [produtos, setProdutos] = useState<Produto[]>([])
   const [form, setForm] = useState({ cliente_nome: '', cliente_whatsapp: '', forma_pagamento: 'PIX', observacoes: '' })
   const [itens, setItens] = useState<ItemPedido[]>([])
-
-  useEffect(() => { listarProdutosOffline().then(setProdutos) }, [])
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null)
+  const [prodSearch, setProdSearch] = useState('')
 
   const addItem = (v: Variacao, pnome: string) => {
     setItens([...itens, { variacao_id: v.id, quantidade: 1, preco_unitario: v.preco_venda || 0, variacao_nome: `${pnome} - ${v.nome}`, customizacoes: [] }])
@@ -53,17 +52,16 @@ export default function PedidoNovo() {
         })),
       })
       toast('success', 'Pedido criado com sucesso!')
-      navigate('/pedidos')
+      navigate('/admin/pedidos')
     } catch (err) {
       const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao criar pedido'
       toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
-      if (err instanceof MutationQueuedError) navigate('/pedidos')
+      if (err instanceof MutationQueuedError) navigate('/admin/pedidos')
     }
   }
 
   return (
-    <div>
-      <PageHeader title="Novo Pedido" icon={<ShoppingBag className="w-6 h-6" />} backTo="/pedidos" />
+    <div>          <PageHeader title="Novo Pedido" icon={<ShoppingBag className="w-6 h-6" />} backTo="/admin/pedidos" />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         {/* Dados do cliente */}
@@ -126,28 +124,64 @@ export default function PedidoNovo() {
             </div>
           ))}
 
-          {/* Seleção de variações */}
-          <details className="mt-3">
-            <summary className="text-sm text-massa-600 cursor-pointer hover:text-massa-800 font-medium">
-              <Plus className="w-4 h-4 inline mr-1" /> Adicionar item
-            </summary>
-            <div className="mt-3 space-y-2 max-h-60 overflow-auto">
-              {produtos.map(p => (
-                <div key={p.id}>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{p.nome}</p>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    {p.variacoes?.filter(v => v.ativo).map(v => (
-                      <button type="button" key={v.id} onClick={() => addItem(v, p.nome)}
-                        className="text-left p-2 border rounded-lg hover:bg-massa-50 hover:border-massa-300 text-sm">
-                        {v.nome}
-                        <span className="block text-xs text-gray-500">R$ {v.preco_venda?.toFixed(2) || '—'}</span>
-                      </button>
-                    ))}
-                  </div>
+          {/* Busca de produtos com autocomplete */}
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Adicionar produto</label>
+            <AutocompleteProduto
+              value={prodSearch}
+              onChange={setProdSearch}
+              onSelect={(produto) => {
+                setSelectedProduto(produto)
+                setProdSearch(produto.nome)
+              }}
+              placeholder="Buscar produto..."
+              autoFocus={false}
+            />
+          </div>
+
+          {/* Variações do produto selecionado */}
+          {selectedProduto && (
+            <div className="mt-3 p-4 bg-massa-50 rounded-xl border border-massa-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-massa-600" />
+                  <span className="font-medium text-sm text-massa-800">{selectedProduto.nome}</span>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => { setSelectedProduto(null); setProdSearch('') }}
+                  className="text-xs text-massa-600 hover:text-massa-800 underline"
+                >
+                  Trocar produto
+                </button>
+              </div>
+              {selectedProduto.variacoes?.filter(v => v.ativo).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-3">Nenhuma variação ativa</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {selectedProduto.variacoes?.filter(v => v.ativo).map(v => (
+                    <button
+                      type="button"
+                      key={v.id}
+                      onClick={() => {
+                        addItem(v, selectedProduto.nome)
+                        setSelectedProduto(null)
+                        setProdSearch('')
+                      }}
+                      className="text-left p-3 border border-massa-200 bg-white rounded-xl
+                        hover:border-massa-400 hover:shadow-sm hover:bg-massa-50
+                        active:scale-[0.98] transition-all duration-150"
+                    >
+                      <span className="block text-sm font-medium text-gray-800">{v.nome}</span>
+                      <span className="block text-xs text-massa-600 font-semibold mt-1">
+                        R$ {v.preco_venda?.toFixed(2) || '—'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </details>
+          )}
         </div>
 
         {/* Total */}
