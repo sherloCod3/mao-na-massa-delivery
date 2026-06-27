@@ -143,11 +143,18 @@ async def notificar_novo_pedido(
 
     # Gerar link wa.me + Evolution API se configurado
     msg_cliente = (
-        f"Olá {cliente_nome}! 🥟\n\n"
-        f"📥 Pedido #{pedido_id} recebido com sucesso!\n"
-        f"💰 Total: R$ {total:.2f}\n\n"
+        f"━━━ 🧾 PEDIDO #{pedido_id} ━━━\n\n"
+        f"👤 Olá {cliente_nome}!\n"
+        f"💰 Total: R$ {total:.2f}\n"
+        f"📥 Status: *Recebido*\n"
+    )
+    if itens_resumo:
+        msg_cliente += f"\n── Itens ──\n{itens_resumo}\n"
+    msg_cliente += (
+        f"────────────────\n\n"
         f"Em breve começaremos a preparar! 👨‍🍳\n"
-        f"Obrigado por comprar no Mão na Massa! 🎉"
+        f"Obrigado por comprar no Mão na Massa! 🎉\n"
+        f"━━━ 🥟 Mão na Massa ━━━"
     )
     link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente) if whatsapp else None
 
@@ -201,10 +208,13 @@ async def notificar_status_pedido(
 
     # WhatsApp automático via Evolution API + wa.me link
     msg_cliente = (
-        f"Olá {cliente_nome}! 🥟\n\n"
-        f"Seu pedido #{pedido_id} está: *{status_nome}*\n"
-        f"💰 Valor: R$ {total:.2f}\n\n"
-        f"Obrigado por comprar no Mão na Massa! 🎉"
+        f"━━━ 🧾 PEDIDO #{pedido_id} ━━━\n\n"
+        f"👤 Olá {cliente_nome}!\n"
+        f"💰 Total: R$ {total:.2f}\n"
+        f"{emoji} Status: *{status_nome}*\n"
+        f"────────────────\n\n"
+        f"Obrigado por comprar no Mão na Massa! 🎉\n"
+        f"━━━ 🥟 Mão na Massa ━━━"
     )
     link_whatsapp = gerar_link_whatsapp(whatsapp, msg_cliente) if whatsapp else None
 

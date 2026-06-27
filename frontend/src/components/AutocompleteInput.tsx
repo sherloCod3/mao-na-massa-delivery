@@ -45,6 +45,7 @@ export default function AutocompleteInput({
   const [results, setResults] = useState<AutocompleteItem[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const [searched, setSearched] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
@@ -54,17 +55,21 @@ export default function AutocompleteInput({
     if (q.length < minChars) {
       setResults([])
       setOpen(false)
+      setSearched(false)
       return
     }
     setLoading(true)
+    setSearched(false)
     try {
       const items = await onSearch(q)
       setResults(items)
-      setOpen(items.length > 0)
+      setOpen(items.length > 0 || q.length >= minChars)
+      setSearched(true)
       setActiveIdx(-1)
     } catch {
       setResults([])
       setOpen(false)
+      setSearched(false)
     } finally {
       setLoading(false)
     }
@@ -182,7 +187,7 @@ export default function AutocompleteInput({
         </ul>
       )}
 
-      {open && results.length === 0 && !loading && query.length >= minChars && (
+      {searched && results.length === 0 && !loading && query.length >= minChars && (
         <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-center text-sm text-gray-400">
           Nenhum resultado encontrado
         </div>

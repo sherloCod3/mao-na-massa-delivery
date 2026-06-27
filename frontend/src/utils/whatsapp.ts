@@ -46,11 +46,14 @@ export function mensagemStatusPedido(
     : ''
 
   return (
-    `Olá ${clienteNome}! 🥟\n\n` +
-    `${emoji} Seu pedido #${pedidoId} está: *${statusNome}*\n` +
-    `💰 Total: R$ ${total.toFixed(2)}` +
+    `━━━ 🧾 PEDIDO #${pedidoId} ━━━\n\n` +
+    `👤 Olá ${clienteNome}!\n` +
+    `💰 Total: R$ ${total.toFixed(2)}\n` +
+    `${emoji} Status: *${statusNome}*` +
     tracking +
-    `\n\nObrigado por comprar no Mão na Massa! 🎉`
+    `\n────────────────\n\n` +
+    `Obrigado por comprar no Mão na Massa! 🎉\n` +
+    `━━━ 🥟 Mão na Massa ━━━`
   )
 }
 
@@ -63,10 +66,13 @@ export function mensagemNovoPedido(
   total: number,
 ): string {
   return (
-    `Olá ${clienteNome}! 🥟\n\n` +
-    `📥 Pedido #${pedidoId} recebido com sucesso!\n` +
-    `💰 Total: R$ ${total.toFixed(2)}\n\n` +
+    `━━━ 🧾 PEDIDO #${pedidoId} ━━━\n\n` +
+    `👤 Olá ${clienteNome}!\n` +
+    `💰 Total: R$ ${total.toFixed(2)}\n` +
+    `📥 Status: *Recebido*\n` +
+    `────────────────\n\n` +
     `Em breve começaremos a preparar! 👨‍🍳\n` +
-    `Obrigado por comprar no Mão na Massa! 🎉`
+    `Obrigado por comprar no Mão na Massa! 🎉\n` +
+    `━━━ 🥟 Mão na Massa ━━━`
   )
 }
