@@ -23,8 +23,8 @@ mao-na-massa = "app.main:start"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "bandit[toml]>=1.9.4",
     "httpx>=0.28.1",
     "networkx>=3.6.1",
