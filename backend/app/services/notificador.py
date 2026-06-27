@@ -134,12 +134,16 @@ async def notificar_novo_pedido(
     total: float,
     itens_resumo: str,
     whatsapp: str | None = None,
+    token_acesso: str | None = None,
 ):
     """Notifica administrador sobre novo pedido."""
     titulo = f"🆕 Pedido #{pedido_id}"
     mensagem = f"Pedido de <b>{cliente_nome}</b> no valor de <b>R$ {total:.2f}</b>"
     contato = f"\n📞 Whatsapp: {whatsapp}" if whatsapp else ""
     detalhes = f"\n{itens_resumo}"
+
+    tracking_url = f"{settings.app_url}/track/{token_acesso}" if token_acesso else None
+    tracking_linha = f"\n📍 Acompanhe: {tracking_url}" if tracking_url else ""
 
     # Gerar link wa.me + Evolution API se configurado
     msg_cliente = (
@@ -151,7 +155,8 @@ async def notificar_novo_pedido(
     if itens_resumo:
         msg_cliente += f"\n── Itens ──\n{itens_resumo}\n"
     msg_cliente += (
-        f"────────────────\n\n"
+        f"────────────────\n"
+        f"{tracking_linha}\n"
         f"Em breve começaremos a preparar! 👨‍🍳\n"
         f"Obrigado por comprar no Mão na Massa! 🎉\n"
         f"━━━ 🥟 Mão na Massa ━━━"
@@ -172,6 +177,9 @@ async def notificar_novo_pedido(
         f"🏠 <a href='{settings.app_url}/pedidos/{pedido_id}'>Abrir no painel</a>"
     )
 
+    if tracking_url:
+        texto_telegram += f"\n📍 <a href='{tracking_url}'>Tracking do cliente</a>"
+
     if link_whatsapp:
         texto_telegram += f"\n📱 <a href='{link_whatsapp}'>WhatsApp para {cliente_nome}</a>"
 
@@ -191,6 +199,7 @@ async def notificar_status_pedido(
     status_novo: str,
     total: float,
     whatsapp: str | None = None,
+    token_acesso: str | None = None,
 ):
     """Notifica administrador sobre mudança de status do pedido."""
     emoji_map = {
@@ -206,13 +215,17 @@ async def notificar_status_pedido(
     titulo = f"{emoji} Pedido #{pedido_id} — {status_nome}"
     mensagem = f"Status do pedido de {cliente_nome} alterado para: {status_nome}"
 
+    tracking_url = f"{settings.app_url}/track/{token_acesso}" if token_acesso else None
+    tracking_linha = f"\n📍 Acompanhe: {tracking_url}" if tracking_url else ""
+
     # WhatsApp automático via Evolution API + wa.me link
     msg_cliente = (
         f"━━━ 🧾 PEDIDO #{pedido_id} ━━━\n\n"
         f"👤 Olá {cliente_nome}!\n"
         f"💰 Total: R$ {total:.2f}\n"
         f"{emoji} Status: *{status_nome}*\n"
-        f"────────────────\n\n"
+        f"────────────────\n"
+        f"{tracking_linha}\n\n"
         f"Obrigado por comprar no Mão na Massa! 🎉\n"
         f"━━━ 🥟 Mão na Massa ━━━"
     )
@@ -230,6 +243,9 @@ async def notificar_status_pedido(
         f"━━━━━━━━━━━━━━━━\n"
         f"🏠 <a href='{settings.app_url}/pedidos/{pedido_id}'>Ver no painel</a>"
     )
+
+    if tracking_url:
+        texto_telegram += f"\n📍 <a href='{tracking_url}'>Tracking do cliente</a>"
 
     if link_whatsapp:
         texto_telegram += f"\n📱 <a href='{link_whatsapp}'>WhatsApp para {cliente_nome}</a>"

@@ -46,7 +46,7 @@ def _serialize_item(item: ItemPedido) -> dict:
     }
 
 
-async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None):
+async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None, token_acesso: str | None):
     """Busca os nomes das variações e notifica (roda em BackgroundTask)."""
     import logging
     logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ async def _notificar_pedido_criado(pedido_id: int, cliente_nome: str, total: flo
             total=total,
             itens_resumo=itens_resumo,
             whatsapp=whatsapp,
+            token_acesso=token_acesso,
         )
     except Exception as exc:
         logger.exception("Falha ao notificar novo pedido %d: %s", pedido_id, exc)
@@ -159,7 +160,7 @@ async def criar_pedido(
     # Notificar admin sobre novo pedido (fire-and-forget via BackgroundTasks)
     background_tasks.add_task(
         _notificar_pedido_criado, pedido.id, pedido.cliente_nome,
-        pedido.total, pedido.cliente_whatsapp
+        pedido.total, pedido.cliente_whatsapp, pedido.token_acesso
     )
 
     return pedido
@@ -221,6 +222,7 @@ async def atualizar_status_pedido(
         status_novo=pedido.status,
         total=pedido.total,
         whatsapp=pedido.cliente_whatsapp,
+        token_acesso=pedido.token_acesso,
     )
 
     return pedido

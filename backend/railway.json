@@ -5,6 +5,12 @@
     "buildCommand": "uv sync --no-dev"
   },
   "deploy": {
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "volumeMounts": [
+      {
+        "name": "sqlite-data",
+        "mountPath": "/data"
+      }
+    ]
   }
 }

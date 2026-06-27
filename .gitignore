@@ -6,7 +6,11 @@ __pycache__/
 venv/
 *.env
 backend/mao-na-massa.db
+backend/mao-na-massa.db-shm
+backend/mao-na-massa.db-wal
 test-mao-na-massa.db
+*.db-shm
+*.db-wal
 
 # Node / Frontend
 node_modules/
