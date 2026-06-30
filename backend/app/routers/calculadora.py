@@ -85,9 +85,7 @@ async def calcular_preco(
         )
 
     custo_unitario = round(custo_total, 2)
-    preco_sugerido_unitario = round(
-        custo_unitario * (1 + data.margem_percentual / 100), 2
-    )
+    preco_sugerido_unitario = round(custo_unitario * (1 + data.margem_percentual / 100), 2)
     preco_sugerido_total = round(preco_sugerido_unitario * data.quantidade_unidades, 2)
 
     return CalculoResponse(
