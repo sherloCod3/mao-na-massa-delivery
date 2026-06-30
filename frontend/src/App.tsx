@@ -9,6 +9,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Landing = lazy(() => import('./pages/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Ingredientes = lazy(() => import('./pages/Ingredientes'))
+const CalculadoraPreco = lazy(() => import('./pages/CalculadoraPreco'))
 const ListaCompras = lazy(() => import('./pages/ListaCompras'))
 const Produtos = lazy(() => import('./pages/Produtos'))
 const Pedidos = lazy(() => import('./pages/Pedidos'))
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/admin/pedidos/novo" element={<AdminPage><PedidoNovo /></AdminPage>} />
         <Route path="/admin/pedidos/:id" element={<AdminPage><PedidoDetalhe /></AdminPage>} />
         <Route path="/admin/produtos" element={<AdminPage><Produtos /></AdminPage>} />
+        <Route path="/admin/calculadora-preco" element={<AdminPage><CalculadoraPreco /></AdminPage>} />
         <Route path="/admin/lista-compras" element={<AdminPage><ListaCompras /></AdminPage>} />
         <Route path="/admin/ingredientes" element={<AdminPage><Ingredientes /></AdminPage>} />
         <Route path="/admin/configuracao" element={<AdminPage><Configuracao /></AdminPage>} />

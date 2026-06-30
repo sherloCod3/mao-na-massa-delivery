@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+import json
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CustomizacaoItem(BaseModel):
@@ -22,10 +24,22 @@ class ItemPedidoResponse(BaseModel):
     variacao_id: int
     quantidade: int
     preco_unitario: float
-    customizacoes: str | None = None
+    customizacoes: list[dict] | None = None
     subtotal: float
     variacao_nome: str | None = None
     produto_nome: str | None = None
+
+    @field_validator("customizacoes", mode="before")
+    @classmethod
+    def parse_customizacoes(cls, v: str | list | None) -> list | None:
+        if v is None or v == "":
+            return None
+        if isinstance(v, list):
+            return v
+        try:
+            return json.loads(v)
+        except (json.JSONDecodeError, TypeError):
+            return None
 
 
 class PedidoCreate(BaseModel):

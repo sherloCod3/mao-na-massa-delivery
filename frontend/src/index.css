@@ -170,7 +170,13 @@
 
   .card-hover:hover {
     box-shadow: 0 8px 32px -12px rgba(199, 62, 29, 0.15);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+  }
+
+  .modal-overlay {
+    background: var(--bg-overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .btn {
@@ -182,12 +188,12 @@
     border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
-    transition: background-color 0.2s ease, transform 0.15s ease;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
     cursor: pointer;
   }
 
   .btn:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   .btn-primary {
@@ -197,6 +203,7 @@
 
   .btn-primary:hover {
     background-color: var(--massa-600);
+    box-shadow: 0 4px 12px rgba(199, 62, 29, 0.25);
   }
 
   .btn-secondary {
@@ -207,6 +214,7 @@
 
   .btn-secondary:hover {
     background-color: var(--massa-50);
+    border-color: var(--massa-300);
   }
 
   .input {
@@ -223,11 +231,21 @@
 
   .input:focus {
     border-color: var(--massa-500);
-    box-shadow: 0 0 0 3px rgba(199, 62, 29, 0.1);
+    box-shadow: 0 0 0 3px rgba(199, 62, 29, 0.12);
   }
 
   .input::placeholder {
     color: var(--text-muted);
+  }
+
+  /* Focus ring for buttons and interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--massa-500);
+    outline-offset: 2px;
   }
 }
 

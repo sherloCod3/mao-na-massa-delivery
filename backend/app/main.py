@@ -17,6 +17,7 @@ from app.routers import (
     admin_auth_router,
     admin_site_config_router,
     admin_testimonials_router,
+    calculadora_router,
     dashboard_router,
     ingredientes_router,
     lista_compras_router,
@@ -141,6 +142,7 @@ app.include_router(admin_testimonials_router, prefix="/api/v1")
 app.include_router(publico_site_config_router, prefix="/api/v1")
 app.include_router(admin_auth_router, prefix="/api/v1")
 app.include_router(publico_testimonials_router, prefix="/api/v1")
+app.include_router(calculadora_router, prefix="/api/v1")
 
 
 @app.get("/")

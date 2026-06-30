@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X, History, ClipboardList } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Plus, Pencil, Trash2, AlertTriangle, Package, ArrowUpDown, X, History, ClipboardList, Clock } from 'lucide-react'
 import { listarIngredientesOffline, criarIngredienteOffline, atualizarIngredienteOffline, desativarIngredienteOffline, movimentarEstoqueOffline, listarMovimentacoesOffline } from '../services/offlineClient'
 import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
@@ -10,6 +10,8 @@ import AutocompleteIngrediente from '../components/AutocompleteIngrediente'
 export default function Ingredientes() {
   const { toast } = useToast()
   const [items, setItems] = useState<Ingrediente[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
   const [form, setForm] = useState({
@@ -25,9 +27,30 @@ export default function Ingredientes() {
     open: false, nome: '', movs: [],
   })
 
-  const load = () => listarIngredientesOffline().then(setItems)
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await listarIngredientesOffline()
+      setItems(data)
+    } catch {
+      setError('Erro ao carregar ingredientes')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  // Refresh pós-CRUD sem loading state
+  const refresh = useCallback(async () => {
+    try {
+      const data = await listarIngredientesOffline()
+      setItems(data)
+    } catch {
+      // Silêncio — dados anteriores continuam visíveis
+    }
+  }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +65,7 @@ export default function Ingredientes() {
       setShowForm(false)
       setEditId(null)
       setForm({ nome: '', unidade_medida: 'g', preco_atual: 0, embalagem: 1000, quantidade_estoque: 0, estoque_minimo: 0 })
-      load()
+      refresh()
     } catch (err) {
       const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao salvar ingrediente'
       toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
@@ -64,7 +87,7 @@ export default function Ingredientes() {
       try {
         await desativarIngredienteOffline(id)
         toast('success', 'Ingrediente desativado')
-        load()
+        refresh()
       } catch (err) {
         const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao desativar ingrediente'
         toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
@@ -98,7 +121,7 @@ export default function Ingredientes() {
       })
       toast('success', `${movForm.tipo === 'entrada' ? 'Entrada' : 'Saída'} registrada! Saldo: ${result.saldo_posterior}`)
       setMovForm({ open: false, id: 0, nome: '', tipo: 'entrada', quantidade: 0, motivo: '' })
-      load()
+      refresh()
     } catch (err) {
       toast('error', err instanceof Error ? err.message : 'Erro ao movimentar estoque')
     }
@@ -138,7 +161,22 @@ export default function Ingredientes() {
         </div>
       )}
 
-      {showForm && (
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center h-64">
+          <Clock className="w-8 h-8 text-massa-300 animate-spin" />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !loading && (
+        <div className="card p-8 text-center">
+          <p className="text-red-600 mb-2">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-massa-600 hover:underline">Tentar novamente</button>
+        </div>
+      )}
+
+      {!loading && !error && showForm && (
         <form onSubmit={handleSubmit} className="bg-white card p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">{editId ? 'Editar' : 'Novo'} Ingrediente</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -200,6 +238,7 @@ export default function Ingredientes() {
         </form>
       )}
 
+      {!loading && !error && (
       <div className="bg-white card overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
@@ -274,7 +313,7 @@ export default function Ingredientes() {
 
       {/* Modal de histórico de movimentações */}
       {histModal.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setHistModal({ open: false, nome: '', movs: [] })}>
+        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setHistModal({ open: false, nome: '', movs: [] })}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -329,7 +368,7 @@ export default function Ingredientes() {
 
       {/* Modal de movimentação de estoque */}
       {movForm.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setMovForm({ ...movForm, open: false })}>
+        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setMovForm({ ...movForm, open: false })}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">

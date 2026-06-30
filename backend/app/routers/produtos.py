@@ -20,16 +20,17 @@ router = APIRouter(
 async def listar_produtos(
     apenas_ativos: bool = True,
     search: str | None = Query(None, min_length=1),
-    limite: int | None = Query(None, ge=1, le=100),
+    limite: int = Query(50, ge=1, le=100, description="Máx. de resultados por página"),
+    pagina: int = Query(1, ge=1, description="Número da página (começa em 1)"),
     session: AsyncSession = Depends(get_session),
 ):
+    offset = (pagina - 1) * limite
     query = select(Produto).options(selectinload(Produto.variacoes)).order_by(Produto.nome)
     if apenas_ativos:
         query = query.where(Produto.ativo.is_(True))
     if search:
         query = query.where(Produto.nome.ilike(f"%{search}%"))
-    if limite:
-        query = query.limit(limite)
+    query = query.offset(offset).limit(limite)
     result = await session.execute(query)
     return result.scalars().all()
 

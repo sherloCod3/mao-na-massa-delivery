@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, ShoppingBag, Package } from 'lucide-react'
+import { Trash2, ShoppingBag, Package, Loader2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import AutocompleteProduto from '../components/AutocompleteProduto'
 import { pedidosApi } from '../api/client'
@@ -23,6 +23,7 @@ export default function PedidoNovo() {
   const [itens, setItens] = useState<ItemPedido[]>([])
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null)
   const [prodSearch, setProdSearch] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const addItem = (v: Variacao, pnome: string) => {
     setItens([...itens, { variacao_id: v.id, quantidade: 1, preco_unitario: v.preco_venda || 0, variacao_nome: `${pnome} - ${v.nome}`, customizacoes: [] }])
@@ -41,6 +42,11 @@ export default function PedidoNovo() {
       toast('error', 'Adicione pelo menos um item ao pedido!')
       return
     }
+    if (!form.cliente_nome.trim()) {
+      toast('error', 'Informe o nome do cliente!')
+      return
+    }
+    setSubmitting(true)
     try {
       await pedidosApi.criar({
         ...form,
@@ -57,6 +63,8 @@ export default function PedidoNovo() {
       const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao criar pedido'
       toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
       if (err instanceof MutationQueuedError) navigate('/admin/pedidos')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -190,8 +198,14 @@ export default function PedidoNovo() {
           <span className="text-2xl font-bold text-massa-600">R$ {total.toFixed(2)}</span>
         </div>
 
-        <button type="submit" className="w-full bg-massa-600 text-white py-3 rounded-xl font-medium hover:bg-massa-700 transition-colors">
-          Finalizar Pedido
+        <button type="submit" disabled={submitting}
+          className="w-full bg-massa-600 text-white py-3 rounded-xl font-medium hover:bg-massa-700
+            transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px]">
+          {submitting ? (
+            <><Loader2 className="w-5 h-5 animate-spin" /> Criando pedido...</>
+          ) : (
+            'Finalizar Pedido'
+          )}
         </button>
       </form>
     </div>

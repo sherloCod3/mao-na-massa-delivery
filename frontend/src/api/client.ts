@@ -211,7 +211,7 @@ export interface PedidoItem {
   variacao_id: number
   quantidade: number
   preco_unitario: number
-  customizacoes: string | null
+  customizacoes: { nome: string; preco: number }[] | null
   subtotal: number
   variacao_nome: string | null
   produto_nome: string | null
@@ -312,10 +312,11 @@ export interface CustoVariacao {
 // ─── API methods ─────────────────────────────────────────────────
 
 export const ingredientesApi = {
-  listar: (search?: string, limite?: number) => {
+  listar: (search?: string, limite?: number, pagina?: number) => {
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (limite) params.set('limite', String(limite))
+    if (pagina) params.set('pagina', String(pagina))
     const qs = params.toString()
     return request<Ingrediente[]>(`/ingredientes${qs ? `?${qs}` : ''}`)
   },
@@ -329,10 +330,11 @@ export const ingredientesApi = {
 }
 
 export const produtosApi = {
-  listar: (search?: string, limite?: number) => {
+  listar: (search?: string, limite?: number, pagina?: number) => {
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (limite) params.set('limite', String(limite))
+    if (pagina) params.set('pagina', String(pagina))
     const qs = params.toString()
     return request<Produto[]>(`/produtos${qs ? `?${qs}` : ''}`)
   },
@@ -365,7 +367,14 @@ export interface PedidoPayload {
 }
 
 export const pedidosApi = {
-  listar: () => request<Pedido[]>('/pedidos'),
+  listar: (params?: { status?: string; limite?: number; pagina?: number }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.limite) searchParams.set('limite', String(params.limite))
+    if (params?.pagina) searchParams.set('pagina', String(params.pagina))
+    const qs = searchParams.toString()
+    return request<Pedido[]>(`/pedidos${qs ? `?${qs}` : ''}`)
+  },
   criar: (data: PedidoPayload) => request<Pedido>('/pedidos', { method: 'POST', body: JSON.stringify(data) }),
   obter: (id: number) => request<Pedido>(`/pedidos/${id}`),
   atualizarStatus: (id: number, status: string) =>
@@ -470,6 +479,36 @@ export const adminTestimonialsApi = {
   atualizar: (id: number, data: { status?: string; destaque?: boolean; cliente_nome?: string; texto?: string }) =>
     request<TestimonialAdmin>(`/admin/testimonials/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletar: (id: number) => request<void>(`/admin/testimonials/${id}`, { method: 'DELETE' }),
+}
+
+// ─── Calculadora de Preço ──────────────────────────────────────────
+
+export interface IngredienteCalculo {
+  ingrediente_id: number
+  quantidade: number
+}
+
+export interface DetalheIngredienteCalculo {
+  ingrediente_id: number
+  nome: string
+  unidade_medida: string
+  quantidade: number
+  preco_por_unidade_medida: number
+  custo: number
+}
+
+export interface CalculoResponse {
+  custo_unitario: number
+  preco_sugerido_unitario: number
+  preco_sugerido_total: number
+  margem_percentual: number
+  quantidade_unidades: number
+  detalhes: DetalheIngredienteCalculo[]
+}
+
+export const calculadoraApi = {
+  calcular: (data: { ingredientes: IngredienteCalculo[]; margem_percentual: number; quantidade_unidades: number }) =>
+    request<CalculoResponse>('/calculadora/preco', { method: 'POST', body: JSON.stringify(data) }),
 }
 
 export const listaComprasApi = {

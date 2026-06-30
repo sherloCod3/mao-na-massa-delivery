@@ -150,7 +150,7 @@ export default function PedidoDetalhe() {
               <p className="text-sm font-medium truncate">
                 {item.quantidade}x {item.variacao_nome || `Variação #${item.variacao_id}`}
               </p>
-              <p className="text-xs text-gray-500">R$ {item.preco_unitario.toFixed(2)}/un {item.customizacoes ? `+ ${item.customizacoes}` : ''}</p>
+              <p className="text-xs text-gray-500">R$ {item.preco_unitario.toFixed(2)}/un {item.customizacoes?.length ? `+ ${item.customizacoes.map(c => c.nome).join(', ')}` : ''}</p>
             </div>
             <span className="text-sm font-medium shrink-0">R$ {item.subtotal.toFixed(2)}</span>
           </div>

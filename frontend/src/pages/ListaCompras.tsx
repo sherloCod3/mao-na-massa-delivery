@@ -356,7 +356,7 @@ export default function ListaCompras() {
 
       {/* Modal Salvar */}
       {showSalvarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSalvarModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setShowSalvarModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-80" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-800 mb-1">Salvar lista</h3>
             <p className="text-sm text-gray-500 mb-4">Dê um nome para esta lista (ex: "Mercado semanal")</p>

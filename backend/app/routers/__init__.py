@@ -1,6 +1,7 @@
 from app.routers.admin_auth import router as admin_auth_router
 from app.routers.admin_site_config import router as admin_site_config_router
 from app.routers.admin_testimonials import router as admin_testimonials_router
+from app.routers.calculadora import router as calculadora_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.ingredientes import router as ingredientes_router
 from app.routers.lista_compras import router as lista_compras_router
@@ -16,6 +17,7 @@ __all__ = [
     "admin_auth_router",
     "admin_site_config_router",
     "admin_testimonials_router",
+    "calculadora_router",
     "dashboard_router",
     "ingredientes_router",
     "lista_compras_router",

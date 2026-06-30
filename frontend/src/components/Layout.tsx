@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  CookingPot, Home, ShoppingBag, Package, ClipboardList, ShoppingCart,
+  CookingPot, Home, ShoppingBag, Package, ClipboardList, ShoppingCart, Calculator,
   Settings, MessageCircle, LogOut,
   Menu, X,
 } from 'lucide-react'
@@ -23,6 +23,7 @@ const navItems = [
 ]
 
 const navItemsSecondary = [
+  { to: '/admin/calculadora-preco', icon: Calculator, label: 'Calculadora' },
   { to: '/admin/configuracao', icon: Settings, label: 'Configuração' },
   { to: '/admin/depoimentos', icon: MessageCircle, label: 'Depoimentos' },
 ]

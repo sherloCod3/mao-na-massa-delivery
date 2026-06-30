@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,16 +26,19 @@ router = APIRouter(
 async def listar_ingredientes(
     apenas_ativos: bool = True,
     search: str | None = None,
-    limite: int = 20,
+    limite: int = Query(20, ge=1, le=100, description="Máx. de resultados por página"),
+    pagina: int = Query(1, ge=1, description="Número da página (começa em 1)"),
     session: AsyncSession = Depends(get_session),
 ):
     """Lista ingredientes. Opcional: filtra por nome (search) e limita resultados."""
+    offset = (pagina - 1) * limite
     query = select(Ingrediente).order_by(Ingrediente.nome)
     if apenas_ativos:
         query = query.where(Ingrediente.ativo.is_(True))
     if search:
         query = query.where(Ingrediente.nome.ilike(f"%{search}%"))
-    result = await session.execute(query.limit(limite))
+    query = query.offset(offset).limit(limite)
+    result = await session.execute(query)
     return result.scalars().all()
 
 

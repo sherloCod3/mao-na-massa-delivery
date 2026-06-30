@@ -1,6 +1,7 @@
 """Test configuration and fixtures for async FastAPI + SQLAlchemy."""
 
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
@@ -12,6 +13,14 @@ from app.base import Base
 from app.config import settings
 from app.database import get_session
 from app.main import app
+
+# Ensure auth is disabled during tests (tests don't send JWT headers)
+os.environ.setdefault("ADMIN_TOKEN", "")
+os.environ.setdefault("ENVIRONMENT", "test")
+
+# Re-initialize settings with test-friendly defaults
+settings.admin_token = ""
+settings.environment = "test"
 
 # Use a separate test database
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test-mao-na-massa.db"

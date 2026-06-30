@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package } from 'lucide-react'
+import { Plus, Package, Clock } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { variacoesApi } from '../api/client'
 import { listarProdutosOffline, listarIngredientesOffline, obterReceitaOffline, obterCustoOffline } from '../services/offlineClient'
@@ -9,13 +9,18 @@ import type { Produto, Ingrediente, ReceitaItem, CustoVariacao } from '../api/cl
 
 export default function Produtos() {
   const [produtos, setProdutos] = useState<Produto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showVariacao, setShowVariacao] = useState<{ produtoId: number } | null>(null)
   const [showReceita, setShowReceita] = useState<{ variacaoId: number; nome: string } | null>(null)
   const [ingredientes, setIngredientes] = useState<Ingrediente[]>([])
 
   useEffect(() => {
-    listarProdutosOffline().then(setProdutos)
-    listarIngredientesOffline().then(setIngredientes)
+    Promise.all([
+      listarProdutosOffline().then(setProdutos),
+      listarIngredientesOffline().then(setIngredientes),
+    ]).catch(() => setError('Erro ao carregar produtos'))
+      .finally(() => setLoading(false))
   }, [])
 
   const loadProdutos = () => listarProdutosOffline().then(setProdutos)
@@ -24,10 +29,26 @@ export default function Produtos() {
     <div>
       <PageHeader title="Produtos" icon={<Package className="w-6 h-6" />} />
 
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center h-64">
+          <Clock className="w-8 h-8 text-massa-300 animate-spin" />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !loading && (
+        <div className="card p-8 text-center">
+          <p className="text-red-600 mb-2">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-massa-600 hover:underline">Tentar novamente</button>
+        </div>
+      )}
+
       {showVariacao && <VariacaoForm produtoId={showVariacao.produtoId} onClose={() => setShowVariacao(null)} onSave={loadProdutos} />}
       {showReceita && <ReceitaForm variacaoId={showReceita.variacaoId} nome={showReceita.nome} ingredientes={ingredientes}
         onClose={() => setShowReceita(null)} onSave={() => loadProdutos()} />}
 
+      {!loading && !error && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {produtos.map(produto => (
           <div key={produto.id} className="bg-white card p-6">
@@ -43,23 +64,58 @@ export default function Produtos() {
               <p className="text-sm text-gray-400">Nenhuma variação cadastrada</p>
             ) : (
               <div className="space-y-2">
-                {produto.variacoes.map(v => (
-                  <div key={v.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                    <div>
+                {produto.variacoes.map(v => {
+                  const custoPct = v.custo_unitario > 0 && v.preco_sugerido > 0
+                    ? Math.min((v.custo_unitario / v.preco_sugerido) * 100, 100)
+                    : 0
+                  return (
+                  <div key={v.id} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-gray-800">{v.nome}</p>
-                      <p className="text-xs text-gray-500">
-                        Custo: R$ {v.custo_unitario.toFixed(2)} | Sugerido: R$ {v.preco_sugerido.toFixed(2)} | Margem: {v.margem_percentual}%
-                      </p>
+                      <div className="flex items-center gap-2">
+                        {v.preco_venda && <span className="text-sm font-bold text-massa-600">R$ {v.preco_venda.toFixed(2)}</span>}
+                        <button onClick={() => setShowReceita({ variacaoId: v.id, nome: v.nome })}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                          Receita
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {v.preco_venda && <span className="text-sm font-bold text-green-600">R$ {v.preco_venda.toFixed(2)}</span>}
-                      <button onClick={async () => {
-                        setShowReceita({ variacaoId: v.id, nome: v.nome })
-                      }} className="text-xs text-blue-600 hover:text-blue-800">
-                        Receita
-                      </button>
+                    {/* Barra visual custo × preço */}
+                    <div className="mt-1">
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            custoPct > 90 ? 'bg-red-400' :
+                            custoPct > 70 ? 'bg-yellow-400' :
+                            'bg-green-400'
+                          }`}
+                          style={{ width: `${custoPct}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs mt-1">
+                        <span className="text-gray-500">Custo: R$ {v.custo_unitario.toFixed(2)}</span>
+                        <span className={`font-semibold ${
+                          v.margem_percentual >= 60 ? 'text-green-600' :
+                          v.margem_percentual >= 30 ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`}>
+                          Margem: {v.margem_percentual}%
+                        </span>
+                        <span className="text-gray-500">Preço: R$ {v.preco_sugerido.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    {/* Lucro por unidade */}
+                    <div className="mt-1.5 text-xs text-gray-400 flex items-center justify-end gap-1">
+                      <span>Lucro/un: </span>
+                      <span className={`font-medium ${
+                        (v.preco_sugerido - v.custo_unitario) > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        R$ {(v.preco_sugerido - v.custo_unitario).toFixed(2)}
+                      </span>
                     </div>
                   </div>
+                  )
+                })
                 ))}
               </div>
             )}
@@ -71,6 +127,7 @@ export default function Produtos() {
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }
@@ -93,7 +150,7 @@ function VariacaoForm({ produtoId, onClose, onSave }: { produtoId: number; onClo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={onClose}>
       <form onClick={e => e.stopPropagation()} onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold mb-4">Nova Variação</h2>
         <div className="space-y-3">
@@ -159,7 +216,7 @@ function ReceitaForm({ variacaoId, nome, ingredientes, onClose, onSave }: {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[80vh] overflow-auto">
         <h2 className="text-lg font-semibold mb-1">Receita: {nome}</h2>
         {custo && (

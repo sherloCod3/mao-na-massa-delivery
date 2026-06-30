@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import date
 
@@ -95,9 +96,12 @@ async def listar_pedidos(
     status_filter: str | None = Query(None, alias="status"),
     data_inicio: date | None = None,
     data_fim: date | None = None,
+    limite: int = Query(200, ge=1, le=500, description="Máx. de resultados por página"),
+    pagina: int = Query(1, ge=1, description="Número da página (começa em 1)"),
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
+    offset = (pagina - 1) * limite
     query = select(Pedido).options(selectinload(Pedido.itens)).order_by(Pedido.created_at.desc())
 
     if status_filter:
@@ -107,6 +111,7 @@ async def listar_pedidos(
     if data_fim:
         query = query.where(func.date(Pedido.created_at) <= data_fim)
 
+    query = query.offset(offset).limit(limite)
     result = await session.execute(query)
     return result.scalars().all()
 
@@ -141,7 +146,7 @@ async def criar_pedido(
             variacao_id=item_data.variacao_id,
             quantidade=item_data.quantidade,
             preco_unitario=item_data.preco_unitario,
-            customizacoes=str(custom_json) if custom_json else None,
+            customizacoes=json.dumps(custom_json, ensure_ascii=False) if custom_json else None,
             subtotal=round(subtotal, 2),
         )
         pedido.itens.append(item)
