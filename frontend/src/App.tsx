@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import PageTransition from './components/PageTransition'
 import { Loading } from './components/AsyncWrapper'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -23,12 +24,14 @@ function PageFallback() {
   return <Loading height="h-64" message="Carregando página..." />
 }
 
-/** Wraps a lazy-loaded page with Suspense + ErrorBoundary */
+/** Wraps a lazy-loaded page with Suspense + ErrorBoundary + fade-in animation */
 function Page({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <Suspense fallback={<PageFallback />}>
-        {children}
+        <PageTransition>
+          {children}
+        </PageTransition>
       </Suspense>
     </ErrorBoundary>
   )

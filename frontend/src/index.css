@@ -153,6 +153,29 @@
   }
 }
 
+/* ─── Semantic Utility Tokens ──────────────────────────────────── */
+
+@layer utilities {
+  .text-muted {
+    color: var(--text-muted);
+  }
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+  .text-primary {
+    color: var(--text-primary);
+  }
+  .bg-surface {
+    background-color: var(--bg-card);
+  }
+  .bg-subtle {
+    background-color: var(--massa-50);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /* ─── Components ──────────────────────────────────────────────── */
 
 @layer components {
@@ -276,3 +299,33 @@
     opacity: 1;
   }
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+
+/* ─── Reduced Motion ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+

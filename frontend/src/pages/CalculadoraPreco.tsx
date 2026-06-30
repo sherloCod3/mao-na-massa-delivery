@@ -96,8 +96,7 @@ export default function CalculadoraPreco() {
             <div className="space-y-2">
               {ingredientes.map((ing, idx) => (
                 <div key={ing.ingrediente_id} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{ing.nome}</p>
+                  <div className="flex-1 min-w-0">                     <p className="text-sm font-medium text-primary">{ing.nome}</p>
                     <p className="text-xs text-gray-400">{ing.unidade_medida === 'g' ? 'Gramas' : ing.unidade_medida === 'ml' ? 'Mililitros' : 'Unidades'}</p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -182,7 +181,7 @@ export default function CalculadoraPreco() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-massa-50 rounded-xl p-4 text-center">
                 <p className="text-xs text-massa-500 uppercase tracking-wide mb-1">Custo Unitário</p>
-                <p className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'var(--font-serif)' }}>
+                <p className="text-2xl font-bold text-primary" style={{ fontFamily: 'var(--font-serif)' }}>
                   R$ {resultado.custo_unitario.toFixed(2)}
                 </p>
               </div>
@@ -235,7 +234,7 @@ export default function CalculadoraPreco() {
               <tbody className="divide-y">
                 {resultado.detalhes.map(d => (
                   <tr key={d.ingrediente_id}>
-                    <td className="py-2 pr-4 font-medium text-gray-800">{d.nome}</td>
+                    <td className="py-2 pr-4 font-medium text-primary">{d.nome}</td>
                     <td className="py-2 pr-4 text-right text-gray-600">{d.quantidade}{d.unidade_medida}</td>
                     <td className="py-2 pr-4 text-right text-gray-500">R$ {d.preco_por_unidade_medida.toFixed(4)}</td>
                     <td className="py-2 text-right font-medium">R$ {d.custo.toFixed(4)}</td>
@@ -243,7 +242,7 @@ export default function CalculadoraPreco() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="font-bold text-gray-800 border-t-2">
+                <tr className="font-bold text-primary border-t-2">
                   <td className="py-2 pr-4">Total</td>
                   <td colSpan={2} />
                   <td className="py-2 text-right">R$ {resultado.custo_unitario.toFixed(2)}</td>

@@ -5,6 +5,7 @@ import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import type { Ingrediente, MovimentacaoEstoque } from '../api/client'
 import PageHeader from '../components/PageHeader'
+import ConfirmDialog from '../components/ConfirmDialog'
 import AutocompleteIngrediente from '../components/AutocompleteIngrediente'
 
 export default function Ingredientes() {
@@ -26,6 +27,7 @@ export default function Ingredientes() {
   const [histModal, setHistModal] = useState<{ open: boolean; nome: string; movs: MovimentacaoEstoque[] }>({
     open: false, nome: '', movs: [],
   })
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -82,16 +84,21 @@ export default function Ingredientes() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Desativar este ingrediente?')) {
-      try {
-        await desativarIngredienteOffline(id)
-        toast('success', 'Ingrediente desativado')
-        refresh()
-      } catch (err) {
-        const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao desativar ingrediente'
-        toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
-      }
+  const handleDelete = (id: number) => {
+    setConfirmDelete(id)
+  }
+
+  const executeDelete = async () => {
+    if (!confirmDelete) return
+    try {
+      await desativarIngredienteOffline(confirmDelete)
+      toast('success', 'Ingrediente desativado')
+      setConfirmDelete(null)
+      refresh()
+    } catch (err) {
+      const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao desativar ingrediente'
+      toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
+      setConfirmDelete(null)
     }
   }
 
@@ -257,7 +264,7 @@ export default function Ingredientes() {
               const baixo = item.ativo && item.quantidade_estoque <= item.estoque_minimo && item.estoque_minimo > 0
               return (
                 <tr key={item.id} className={`hover:bg-gray-50 ${baixo ? 'bg-red-50/50' : ''}`}>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{item.nome}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-primary">{item.nome}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{unidadeLabel(item.unidade_medida)}</td>
                   <td className="px-4 py-3 text-sm text-right">R$ {item.preco_atual.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-right">{item.embalagem}</td>
@@ -349,7 +356,7 @@ export default function Ingredientes() {
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             m.tipo === 'entrada' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                           }`}>
-                            {m.tipo === 'entrada' ? '📦 Entrada' : '📤 Saída'}
+                            {m.tipo === 'entrada' ? 'Entrada' : 'Saída'}
                           </span>
                         </td>
                         <td className="py-2.5 pr-4 text-right font-medium">{m.quantidade}</td>
@@ -372,7 +379,7 @@ export default function Ingredientes() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">
-                {movForm.tipo === 'entrada' ? '📦 Dar Entrada' : '📤 Dar Saída'}
+                {movForm.tipo === 'entrada' ? 'Dar Entrada' : 'Dar Saída'}
               </h2>
               <button onClick={() => setMovForm({ ...movForm, open: false })} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -439,6 +446,18 @@ export default function Ingredientes() {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Desativar ingrediente?"
+        message="Tem certeza que deseja desativar este ingrediente? Ele não aparecerá em novos pedidos, mas os dados históricos serão preservados."
+        variant="danger"
+        confirmLabel="Desativar"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Bell, BellRing, X, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, BellRing, X, CheckCheck, Loader2, BellPlus, Pin, AlertTriangle, Megaphone } from 'lucide-react'
 import { notificacoesApi, type Notificacao } from '../api/client'
 
 const POLL_INTERVAL = 15_000 // 15s
@@ -65,10 +65,10 @@ export default function NotificationBell() {
 
   const tipoIcone = (tipo: string) => {
     switch (tipo) {
-      case 'novo_pedido': return '🆕'
-      case 'status_pedido': return '📌'
-      case 'estoque_baixo': return '⚠️'
-      default: return '📢'
+      case 'novo_pedido': return <BellPlus className="w-4 h-4 text-blue-500" />
+      case 'status_pedido': return <Pin className="w-4 h-4 text-purple-500" />
+      case 'estoque_baixo': return <AlertTriangle className="w-4 h-4 text-red-500" />
+      default: return <Megaphone className="w-4 h-4 text-massa-500" />
     }
   }
 
@@ -105,7 +105,7 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">Notificações</h3>
+            <h3 className="text-sm font-semibold text-primary">Notificações</h3>
             {notificacoes.length > 0 && (
               <button
                 onClick={marcarTodas}
@@ -130,16 +130,16 @@ export default function NotificationBell() {
                   key={n.id}
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group border-b border-gray-50 last:border-0"
                 >
-                  <span className="text-lg mt-0.5 shrink-0">{tipoIcone(n.tipo)}</span>
+                  <span className="mt-0.5 shrink-0 flex items-center justify-center w-6 h-6">{tipoIcone(n.tipo)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{n.titulo}</p>
+                    <p className="text-sm font-medium text-primary truncate">{n.titulo}</p>
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.mensagem.replace(/<[^>]*>/g, '')}</p>
                     <p className="text-[11px] text-gray-400 mt-1">{formatarData(n.created_at)}</p>
                   </div>
                   <button
                     onClick={() => marcarLida(n.id)}
                     disabled={lendo.has(n.id)}
-                    className="shrink-0 p-1 rounded-md text-gray-300 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all"
+                    className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors md:opacity-0 md:group-hover:opacity-100"
                     title="Descartar"
                   >
                     {lendo.has(n.id) ? (

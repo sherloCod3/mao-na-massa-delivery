@@ -233,7 +233,7 @@ export default function ListaCompras() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div className="card p-4">
             <p className="text-xs text-gray-500">Pendentes</p>
-            <p className="text-xl font-bold text-gray-800">{resumo.itens_pendentes}</p>
+            <p className="text-xl font-bold text-primary">{resumo.itens_pendentes}</p>
           </div>
           <div className="card p-4">
             <p className="text-xs text-gray-500">Comprados</p>
@@ -358,7 +358,7 @@ export default function ListaCompras() {
       {showSalvarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay" onClick={() => setShowSalvarModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-80" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">Salvar lista</h3>
+            <h3 className="text-lg font-semibold text-primary mb-1">Salvar lista</h3>
             <p className="text-sm text-gray-500 mb-4">Dê um nome para esta lista (ex: "Mercado semanal")</p>
             <input
               type="text"
@@ -423,7 +423,7 @@ function ItemRow({
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className={`font-medium text-sm ${item.comprado ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+        <p className={`font-medium text-sm ${item.comprado ? 'line-through text-gray-400' : 'text-primary'}`}>
           {item.nome}
         </p>
         <p className="text-xs text-gray-400">

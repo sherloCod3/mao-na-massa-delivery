@@ -61,7 +61,7 @@ export default function PublicTracking() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
       <div className="text-center p-8 max-w-sm">
         <div className="text-6xl mb-4 animate-bounce">🔍</div>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Pedido não encontrado</h1>
+        <h1 className="text-xl font-bold text-primary mb-2">Pedido não encontrado</h1>
         <p className="text-sm text-gray-500">O link pode estar incorreto ou o pedido foi cancelado.</p>
         <a href="/" className="inline-block mt-6 text-sm text-massa-600 hover:text-massa-700 underline">
           Voltar para o início
@@ -83,9 +83,9 @@ export default function PublicTracking() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/50 mb-4">
             <CookingPot className="w-5 h-5 text-massa-600" />
-            <span className="font-bold text-gray-800">Mão na Massa</span>
+            <span className="font-bold text-primary">Mão na Massa</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold text-primary">
             Olá, {pedido.cliente_nome}! 🥟
           </h1>
           <div className="flex items-center justify-center gap-2 mt-1">
@@ -141,7 +141,7 @@ export default function PublicTracking() {
                     )}
                   </div>
                   <div className={`pb-8 transition-opacity duration-300 ${done ? 'opacity-100' : 'opacity-30'}`}>
-                    <p className={`text-sm font-medium ${done ? 'text-gray-800' : 'text-gray-400'}`}>
+                    <p className={`text-sm font-medium ${done ? 'text-primary' : 'text-gray-400'}`}>
                       {s.label}
                     </p>
                   </div>

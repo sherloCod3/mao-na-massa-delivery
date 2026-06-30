@@ -140,7 +140,7 @@ export default function Landing() {
               {heroTitle}
             </h1>
 
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl leading-relaxed">
+            <p className="text-lg sm:text-xl text-secondary mb-8 max-w-xl leading-relaxed">
               {heroSubtitle}
             </p>
 
@@ -168,15 +168,15 @@ export default function Landing() {
             {produtos.length > 0 && (
               <div className="flex items-center gap-8 mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
                 <div>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{produtos.length}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Produtos</p>
+                  <p className="text-2xl font-bold text-primary">{produtos.length}</p>
+                  <p className="text-sm text-muted">Produtos</p>
                 </div>
                 {testimonials.length > 0 && (
                   <>
                     <div className="w-px h-10 bg-gray-200 dark:bg-gray-800" />
                     <div>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{testimonials.length}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Depoimentos</p>
+                      <p className="text-2xl font-bold text-primary">{testimonials.length}</p>
+                      <p className="text-sm text-muted">Depoimentos</p>
                     </div>
                   </>
                 )}
@@ -186,8 +186,8 @@ export default function Landing() {
                     <div className="flex items-center gap-2">
                       <Truck className="w-5 h-5 text-massa-500" />
                       <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{raioEntrega}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{taxaEntrega || 'Delivery'}</p>
+                        <p className="text-sm font-medium text-primary">{raioEntrega}</p>
+                        <p className="text-xs text-muted">{taxaEntrega || 'Delivery'}</p>
                       </div>
                     </div>
                   </>
@@ -215,7 +215,7 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
               Nossos Produtos
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto">
+            <p className="text-muted max-w-lg mx-auto">
               Cada receita é preparada com ingredientes selecionados e aquele toque especial que só o artesanal tem
             </p>
           </div>
@@ -246,11 +246,11 @@ export default function Landing() {
                   <div className="w-12 h-12 rounded-xl bg-massa-50 dark:bg-massa-800/50 flex items-center justify-center mb-4 group-hover:bg-massa-100 dark:group-hover:bg-massa-800 transition-colors">
                     <CookingPot className="w-6 h-6 text-massa-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
+                  <h3 className="text-xl font-bold text-primary mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
                     {produto.nome}
                   </h3>
                   {produto.descricao && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+                    <p className="text-sm text-muted mb-4 line-clamp-2">
                       {produto.descricao}
                     </p>
                   )}
@@ -258,7 +258,7 @@ export default function Landing() {
                     <div className="space-y-2">
                       {produto.variacoes.filter(v => v.ativo).slice(0, 3).map(v => (
                         <div key={v.id} className="flex items-center justify-between py-1.5">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{v.nome}</span>
+                          <span className="text-sm text-secondary">{v.nome}</span>
                           <span className="text-sm font-bold text-massa-600 dark:text-massa-400">
                             {v.preco_venda
                               ? `R$ ${v.preco_venda.toFixed(2)}`
@@ -306,7 +306,7 @@ export default function Landing() {
           <h2 className="text-3xl md:text-4xl font-bold mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
             {aboutTitle}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-secondary leading-relaxed max-w-2xl mx-auto">
             {aboutContent}
           </p>
         </div>
@@ -319,7 +319,7 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
               O que nossos clientes dizem
             </h2>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted">
               A satisfação de quem já experimentou é o nosso melhor ingrediente
             </p>
           </div>
@@ -349,7 +349,7 @@ export default function Landing() {
                   )}
                   {/* HTML sanitizado com DOMPurify contra XSS */}
                   <p
-                    className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4 italic"
+                    className="text-secondary text-sm leading-relaxed mb-4 italic"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(
                         `\u201c${t.texto}\u201d`,

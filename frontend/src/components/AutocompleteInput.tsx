@@ -167,7 +167,7 @@ export default function AutocompleteInput({
       {open && results.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-massa-800 border border-gray-200 dark:border-massa-600 rounded-xl shadow-lg max-h-60 overflow-y-auto"
         >
           {results.map((item, idx) => (
             <li
@@ -175,7 +175,7 @@ export default function AutocompleteInput({
               onMouseDown={() => selectItem(item)}
               onMouseEnter={() => setActiveIdx(idx)}
               className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between
-                ${idx === activeIdx ? 'bg-massa-50 text-massa-900' : 'text-gray-700 hover:bg-gray-50'}
+                ${idx === activeIdx ? 'bg-massa-50 text-massa-900' : 'text-secondary hover:bg-gray-50 dark:hover:bg-massa-50'}
                 ${idx < results.length - 1 ? 'border-b border-gray-100' : ''}`}
             >
               <span className="font-medium">{item.label}</span>
@@ -188,7 +188,7 @@ export default function AutocompleteInput({
       )}
 
       {searched && results.length === 0 && !loading && query.length >= minChars && (
-        <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-center text-sm text-gray-400">
+        <div          className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-massa-800 border border-gray-200 dark:border-massa-600 rounded-xl shadow-lg p-4 text-center text-sm text-muted">
           Nenhum resultado encontrado
         </div>
       )}

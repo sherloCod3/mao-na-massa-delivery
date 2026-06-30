@@ -53,7 +53,7 @@ export default function Produtos() {
         {produtos.map(produto => (
           <div key={produto.id} className="bg-white card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{produto.nome}</h3>
+              <h3 className="text-lg font-semibold text-primary">{produto.nome}</h3>
               <button onClick={() => setShowVariacao({ produtoId: produto.id })}
                 className="flex items-center gap-1 text-sm text-massa-600 hover:text-massa-800">
                 <Plus className="w-4 h-4" /> Variação
@@ -71,9 +71,9 @@ export default function Produtos() {
                   return (
                   <div key={v.id} className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-800">{v.nome}</p>
+                      <p className="text-sm font-medium text-primary">{v.nome}</p>
                       <div className="flex items-center gap-2">
-                        {v.preco_venda && <span className="text-sm font-bold text-massa-600">R$ {v.preco_venda.toFixed(2)}</span>}
+                        {v.preco_venda && <span className="text-sm font-bold text-massa-600 tabular">R$ {v.preco_venda.toFixed(2)}</span>}
                         <button onClick={() => setShowReceita({ variacaoId: v.id, nome: v.nome })}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium">
                           Receita
@@ -93,15 +93,15 @@ export default function Produtos() {
                         />
                       </div>
                       <div className="flex justify-between text-xs mt-1">
-                        <span className="text-gray-500">Custo: R$ {v.custo_unitario.toFixed(2)}</span>
-                        <span className={`font-semibold ${
+                        <span className="text-gray-500 tabular">Custo: R$ {v.custo_unitario.toFixed(2)}</span>
+                        <span className={`font-semibold tabular ${
                           v.margem_percentual >= 60 ? 'text-green-600' :
                           v.margem_percentual >= 30 ? 'text-yellow-600' :
                           'text-red-600'
                         }`}>
                           Margem: {v.margem_percentual}%
                         </span>
-                        <span className="text-gray-500">Preço: R$ {v.preco_sugerido.toFixed(2)}</span>
+                        <span className="text-gray-500 tabular">Preço: R$ {v.preco_sugerido.toFixed(2)}</span>
                       </div>
                     </div>
                     {/* Lucro por unidade */}

@@ -18,7 +18,7 @@ export default function PageHeader({ title, subtitle, icon, backTo, action }: Pa
         {backTo && (
           <button
             onClick={() => navigate(backTo)}
-            className="shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-massa-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Voltar"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -30,8 +30,8 @@ export default function PageHeader({ title, subtitle, icon, backTo, action }: Pa
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-gray-800 truncate">{title}</h1>
-          {subtitle && <p className="text-sm text-gray-500 truncate">{subtitle}</p>}
+          <h1 className="text-2xl font-bold text-primary truncate">{title}</h1>
+          {subtitle && <p className="text-sm text-muted truncate">{subtitle}</p>}
         </div>
       </div>
       {action && (

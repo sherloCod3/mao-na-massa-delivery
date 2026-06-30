@@ -61,10 +61,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 
   return (
     <div
-      className={`pointer-events-auto bg-white border rounded-xl shadow-lg p-3 flex items-start gap-3 animate-slide-in ${border[toast.type]}`}
+      className={`pointer-events-auto bg-white dark:bg-massa-800 border rounded-xl shadow-lg p-3 flex items-start gap-3 animate-slide-in ${border[toast.type]} dark:border-massa-600`}
     >
       {icon[toast.type]}
-      <p className="flex-1 text-sm text-gray-700">{toast.message}</p>
+      <p className="flex-1 text-sm text-gray-700 dark:text-gray-200">{toast.message}</p>
       <button onClick={onDismiss} className="p-0.5 text-gray-400 hover:text-gray-600">
         <X className="w-4 h-4" />
       </button>

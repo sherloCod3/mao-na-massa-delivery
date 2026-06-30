@@ -177,13 +177,13 @@ export default function Pedidos() {
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-mono text-gray-500">#{p.id}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{p.cliente_nome}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-primary">{p.cliente_nome}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColorSimple(p.status)}`}>
                       {getStatusLabel(p.status)}</span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{p.forma_pagamento || '-'}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-right">R$ {p.total.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-right tabular">R$ {p.total.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-gray-500 text-right">
                     {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
@@ -227,10 +227,10 @@ export default function Pedidos() {
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColorSimple(p.status)}`}>
                   {getStatusLabel(p.status)}</span>
               </div>
-              <p className="font-medium text-gray-800">{p.cliente_nome}</p>
+              <p className="font-medium text-primary">{p.cliente_nome}</p>
               <div className="flex items-center justify-between mt-2 text-sm">
                 <span className="text-gray-500">{p.forma_pagamento || '-'}</span>
-                <span className="font-bold text-massa-600">R$ {p.total.toFixed(2)}</span>
+                <span className="font-bold text-massa-600 tabular">R$ {p.total.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
                 <span className="text-xs text-gray-400">

@@ -3,6 +3,7 @@ import {
   MessageCircle, CheckCircle, XCircle, Star, Trash2, RefreshCw,
 } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import { adminTestimonialsApi, type TestimonialAdmin } from '../../api/client'
 import { useToast } from '../../components/Toast'
 
@@ -19,6 +20,7 @@ export default function Depoimentos() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterTab>('pendente')
   const [actionId, setActionId] = useState<number | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
   const { toast } = useToast()
 
   const load = async () => {
@@ -62,12 +64,17 @@ export default function Depoimentos() {
     }
   }
 
-  const remove = async (id: number) => {
-    if (!confirm('Remover este depoimento?')) return
-    setActionId(id)
+  const remove = (id: number) => {
+    setConfirmDelete(id)
+  }
+
+  const executeRemove = async () => {
+    if (!confirmDelete) return
+    setActionId(confirmDelete)
     try {
-      await adminTestimonialsApi.deletar(id)
+      await adminTestimonialsApi.deletar(confirmDelete)
       toast('success', 'Depoimento removido!')
+      setConfirmDelete(null)
       await load()
     } catch {
       toast('error', 'Erro ao remover')
@@ -92,7 +99,7 @@ export default function Depoimentos() {
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800 bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-massa-50 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
@@ -159,8 +166,7 @@ export default function Depoimentos() {
                       <div className="w-9 h-9 rounded-full bg-massa-100 dark:bg-massa-800 flex items-center justify-center text-sm font-bold text-massa-600 shrink-0">
                         {d.cliente_nome.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">{d.cliente_nome}</p>
+                      <div>                         <p className="text-sm font-semibold text-primary">{d.cliente_nome}</p>
                         <div className="flex items-center gap-2">
                           {/* Stars */}
                           {d.nota && (
@@ -257,6 +263,17 @@ export default function Depoimentos() {
           })}
         </div>
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Remover depoimento?"
+        message="Tem certeza que deseja remover este depoimento? Esta ação não pode ser desfeita."
+        variant="danger"
+        confirmLabel="Remover"
+        onConfirm={executeRemove}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

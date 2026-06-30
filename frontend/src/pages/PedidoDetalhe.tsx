@@ -164,7 +164,7 @@ export default function PedidoDetalhe() {
       {/* Link de tracking */}
       {!isCancelado && (
         <div className="bg-white card p-4 sm:p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Link de Acompanhamento</h2>
+          <h2 className="text-sm font-semibold text-secondary mb-2">Link de Acompanhamento</h2>
           <div className="flex gap-2">
             <input
               readOnly

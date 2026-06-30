@@ -180,7 +180,7 @@ export default function PedidoNovo() {
                         hover:border-massa-400 hover:shadow-sm hover:bg-massa-50
                         active:scale-[0.98] transition-all duration-150"
                     >
-                      <span className="block text-sm font-medium text-gray-800">{v.nome}</span>
+                      <span className="block text-sm font-medium text-primary">{v.nome}</span>
                       <span className="block text-xs text-massa-600 font-semibold mt-1">
                         R$ {v.preco_venda?.toFixed(2) || '—'}
                       </span>

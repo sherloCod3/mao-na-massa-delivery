@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div className="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
               <AlertTriangle className="w-7 h-7 text-red-500" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">
+            <h2 className="text-lg font-semibold text-primary mb-1">
               Erro inesperado
             </h2>
             <p className="text-sm text-gray-500 mb-6">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Settings, Save, Plus, Trash2 } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import { adminSiteConfigApi, type SiteConfigAdmin } from '../../api/client'
 import { useToast } from '../../components/Toast'
 
@@ -20,6 +21,7 @@ export default function Configuracao() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Record<number, string>>({})
   const [savingId, setSavingId] = useState<number | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [showNewForm, setShowNewForm] = useState<string | null>(null)
   const [newConfig, setNewConfig] = useState({ chave: '', valor: '', tipo: 'text', grupo: 'geral' })
   const { toast } = useToast()
@@ -67,14 +69,20 @@ export default function Configuracao() {
     }
   }
 
-  const remove = async (chave: string) => {
-    if (!confirm(`Remover "${chave}"?`)) return
+  const remove = (chave: string) => {
+    setConfirmDelete(chave)
+  }
+
+  const executeRemove = async () => {
+    if (!confirmDelete) return
     try {
-      await adminSiteConfigApi.deletar(chave)
+      await adminSiteConfigApi.deletar(confirmDelete)
       toast('success', 'Configuração removida!')
+      setConfirmDelete(null)
       await load()
     } catch {
       toast('error', 'Erro ao remover')
+      setConfirmDelete(null)
     }
   }
 
@@ -107,7 +115,7 @@ export default function Configuracao() {
           {grouped.map(g => (
             <div key={g.grupo} className="card p-6">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: 'var(--font-serif)' }}>
+                <h2 className="text-lg font-semibold text-primary" style={{ fontFamily: 'var(--font-serif)' }}>
                   {g.label}
                 </h2>
                 <button
@@ -235,6 +243,17 @@ export default function Configuracao() {
           ))}
         </div>
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Remover configuração?"
+        message={confirmDelete ? `Tem certeza que deseja remover "${confirmDelete}"? Esta ação não pode ser desfeita.` : ''}
+        variant="danger"
+        confirmLabel="Remover"
+        onConfirm={executeRemove}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

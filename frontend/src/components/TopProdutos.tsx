@@ -27,12 +27,12 @@ export default function TopProdutos({ data }: { data: ProdutoMaisVendido[] }) {
               {idx < 3 ? <Medal className={`w-4 h-4 ${rankColors[idx]}`} /> : idx + 1}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-800">{p.produto_nome}</p>
+              <p className="text-sm font-medium text-primary">{p.produto_nome}</p>
               <p className="text-xs text-gray-400">{p.variacao_nome}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-gray-800">{p.quantidade} un</p>
+            <p className="text-sm font-bold text-primary">{p.quantidade} un</p>
             <p className="text-xs text-gray-500">R$ {p.total_faturado.toFixed(2)}</p>
           </div>
         </div>

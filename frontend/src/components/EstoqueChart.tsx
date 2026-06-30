@@ -42,7 +42,7 @@ export default function EstoqueChart() {
             <div key={item.id}>
               <div className="flex items-center justify-between text-sm mb-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-gray-700">{item.nome}</span>
+                  <span className="font-medium text-secondary">{item.nome}</span>
                   {baixo && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-500">

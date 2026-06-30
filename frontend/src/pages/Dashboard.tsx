@@ -143,7 +143,7 @@ function DashboardHojeView() {
               </div>
             </div>
             <p className="text-sm text-gray-500">{c.label}</p>
-            <p className="text-xl font-bold mt-0.5" style={{ fontFamily: 'var(--font-serif)' }}>{c.value}</p>
+            <p className="text-xl font-bold mt-0.5 tabular" style={{ fontFamily: 'var(--font-serif)' }}>{c.value}</p>
           </div>
         ))}
       </div>
@@ -153,21 +153,21 @@ function DashboardHojeView() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Faturamento</p>
-            <p className="text-xl font-bold text-massa-600 mt-1">R$ {data.faturamento_hoje.toFixed(2)}</p>
+            <p className="text-xl font-bold text-massa-600 mt-1 tabular">R$ {data.faturamento_hoje.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Custo</p>
-            <p className="text-xl font-bold text-amber-600 mt-1">R$ {data.custo_total_estimado.toFixed(2)}</p>
+            <p className="text-xl font-bold text-amber-600 mt-1 tabular">R$ {data.custo_total_estimado.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Lucro</p>
-            <p className={`text-xl font-bold mt-1 ${data.lucro_estimado >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            <p className={`text-xl font-bold mt-1 tabular ${data.lucro_estimado >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               R$ {data.lucro_estimado.toFixed(2)}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Margem</p>
-            <p className="text-xl font-bold text-gray-800 mt-1">{margem !== '—' ? `${margem}%` : margem}</p>
+            <p className="text-xl font-bold text-primary mt-1 tabular">{margem !== '—' ? `${margem}%` : margem}</p>
           </div>
         </div>
       </div>
@@ -254,19 +254,19 @@ function DashboardMensalView() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Pedidos</p>
-              <p className="text-xl font-bold text-gray-800 mt-1">{periodo.total_pedidos}</p>
+              <p className="text-xl font-bold text-primary mt-1 tabular">{periodo.total_pedidos}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Faturamento</p>
-              <p className="text-xl font-bold text-massa-600 mt-1">R$ {periodo.total_faturado.toFixed(2)}</p>
+              <p className="text-xl font-bold text-massa-600 mt-1 tabular">R$ {periodo.total_faturado.toFixed(2)}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Custos</p>
-              <p className="text-xl font-bold text-amber-600 mt-1">R$ {periodo.total_custos.toFixed(2)}</p>
+              <p className="text-xl font-bold text-amber-600 mt-1 tabular">R$ {periodo.total_custos.toFixed(2)}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Lucro</p>
-              <p className={`text-xl font-bold mt-1 ${periodo.total_lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              <p className={`text-xl font-bold mt-1 tabular ${periodo.total_lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 R$ {periodo.total_lucro.toFixed(2)}
               </p>
             </div>

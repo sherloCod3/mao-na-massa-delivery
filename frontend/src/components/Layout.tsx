@@ -45,6 +45,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
+    {/* Skip-link de acessibilidade: visível apenas no foco via teclado */}
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-massa-700 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-2 focus:outline-massa-500 focus:text-sm focus:font-medium"
+    >
+      Pular para o conteúdo
+    </a>
     <div className="flex h-screen">
       {/* ─── Overlay do Drawer (mobile) ─── */}
       {drawerOpen && (
@@ -142,7 +149,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 overflow-auto relative pb-16 md:pb-0">
+      <main id="main-content" className="flex-1 overflow-auto relative pb-16 md:pb-0" tabIndex={-1}>
         {/* Botão hamburger no topo (mobile) */}
         <div className="md:hidden sticky top-0 z-20 bg-white/90 dark:bg-massa-50/90 backdrop-blur-sm border-b dark:border-massa-200 px-4 py-3 flex items-center gap-3">
           <button

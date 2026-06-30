@@ -49,7 +49,7 @@ export default function PwaInstallPrompt() {
               <Download className="w-5 h-5 text-massa-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-800">Instalar App</p>
+              <p className="text-sm font-semibold text-primary">Instalar App</p>
               <p className="text-xs text-gray-500">Adicione à tela inicial</p>
             </div>
           </div>
