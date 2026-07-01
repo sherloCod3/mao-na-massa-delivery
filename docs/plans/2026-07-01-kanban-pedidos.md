@@ -3,7 +3,8 @@
 > **Status:** 📋 Planejado
 > **Branch:** `feat/kanban-pedidos`
 > **Impacto:** 🔥 Alto — experiência central do admin
-> **Estimativa total:** ~10h
+> **Estimativa total:** ~8h (reduzido de 10h após revisão FFCI)
+> **FFCI:** 7/15 (Acceptable — após simplificações)
 
 ---
 
@@ -12,11 +13,10 @@
 A admin gerencia pedidos em uma lista linear (tabela) e precisa avançar o status manualmente um a um. Não há visão consolidada do fluxo de produção — quantos pedidos estão em cada etapa, quais estão parados, quais precisam de atenção.
 
 **Dores identificadas:**
-1. Dificuldade de visualizar gargalos na produção (ex: muitos pedidos "recebidos" sem entrar em produção)
+1. Dificuldade de visualizar gargalos na produção
 2. Status limitado — não há "pendente", "produzido" ou "pausado"
-3. Sem reordenação visual (drag-and-drop) entre colunas
-4. Transições de status só acontecem manualmente, sem automatismos
-5. Sem histórico de mudanças de status (quem/pq mudou)
+3. Transições de status puramente manuais
+4. Sem histórico de mudanças de status (quem/pq mudou)
 
 ---
 
@@ -38,33 +38,33 @@ A admin gerencia pedidos em uma lista linear (tabela) e precisa avançar o statu
    └─────────────────────────────────────────────────────┘
 ```
 
-| Status | Descrição | Ícone | Ação Automática |
-|--------|-----------|-------|-----------------|
-| `pendente` | Pedido recebido, aguardando início da produção | ⏳ | Criado automaticamente ao receber pedido |
-| `producao` | Sendo produzido agora | 👩‍🍳 | Ao clicar "Iniciar Produção" ou automaticamente no horário agendado |
-| `produzido` | Produção concluída, aguardando retirada/entrega | ✅ | Ao marcar produção como concluída |
-| `entrega` | Saiu para entrega | 🚚 | Ao gerar rota de entrega |
-| `entregue` | Entregue ao cliente | 🎉 | Ao confirmar entrega (ou tracking geográfico) |
-| `pausado` | Produção pausada por falta de insumo, cliente pediu pra parar, etc. | ⏸️ | Manual |
-| `cancelado` | Pedido cancelado pelo admin ou cliente | ❌ | Manual, ou automaticamente se não entrar em produção em N dias |
+| Status | Descrição | Ícone | Gatilho |
+|--------|-----------|-------|---------|
+| `pendente` | Pedido recebido, aguardando início da produção | ⏳ | Automático ao criar pedido (substitui "recebido") |
+| `producao` | Sendo produzido agora | 👩‍🍳 | Admin clica "Iniciar Produção" |
+| `produzido` | Produção concluída, aguardando retirada/entrega | ✅ | Admin clica "Concluir Produção" |
+| `entrega` | Saiu para entrega | 🚚 | Admin clica "Saiu para Entrega" |
+| `entregue` | Entregue ao cliente | 🎉 | Admin confirma entrega |
+| `pausado` | Produção pausada (falta insumo, cliente pediu, etc.) | ⏸️ | Admin clica "Pausar" + motivo |
+| `cancelado` | Pedido cancelado | ❌ | Admin clica "Cancelar" + motivo |
 
 ### Regras de Transição
 
 | De → Para | Automático | Manual |
 |-----------|-----------|--------|
-| pendente → producao | ✅ Ao iniciar produção no horário agendado | ✅ Drag p/ coluna "Produção" |
-| producao → produzido | ✅ Ao marcar último item como produzido | ✅ Drag p/ coluna "Produzido" |
-| produzido → entrega | ✅ Ao gerar rota de entrega | ✅ Drag p/ coluna "Entrega" |
-| entrega → entregue | ✅ Ao confirmar entrega | ✅ Drag p/ coluna "Entregue" |
-| qualquer → pausado | ❌ | ✅ Botão "Pausar" + motivo |
+| pendente → producao | ❌ (decisão da admin) | ✅ Botão "Iniciar" ou arrastar |
+| producao → produzido | ❌ (decisão da admin) | ✅ Botão "Concluir" ou arrastar |
+| produzido → entrega | ❌ (decisão da admin) | ✅ Botão "Sair Entrega" ou arrastar |
+| entrega → entregue | ❌ (decisão da admin) | ✅ Botão "Confirmar" ou arrastar |
+| qualquer → pausado | ❌ | ✅ Botão "Pausar" + motivo obrigatório |
 | pausado → qualquer | ❌ | ✅ Botão "Retomar" → volta ao status anterior |
-| qualquer → cancelado | ✅ Se pendente por >48h | ✅ Botão "Cancelar" + motivo |
-| produzido → producao | ❌ | ✅ Retroceder manualmente |
-| entrega → produzido | ❌ | ✅ Retroceder manualmente |
+| qualquer → cancelado | ❌ (decisão da admin) | ✅ Botão "Cancelar" + motivo obrigatório |
+
+> 📐 **Decisão arquitetural:** Todas as transições são manuais. Sem automações agendadas — evita overengineering e surpresas para a admin. O ganho real está na **visibilidade** (kanban) e **agilidade** (um clique em vez de abrir pedido).
 
 ---
 
-## 🗺 Roadmap de Implementação
+## 🗺 Roadmap de Implementação (3 Sprints)
 
 ### Sprint 1 (3h) — Backend: Modelo + API
 
@@ -81,11 +81,20 @@ class StatusPedido(StrEnum):
     cancelado = "cancelado"
 ```
 
-**Migração necessária:** Criar migration Alembic para:
-- `recebido → pendente` nos registros existentes
-- Adicionar novos valores ao ENUM
+**1.2. Adicionar `status_anterior` ao Pedido** (`backend/app/models/pedido.py`)
 
-**1.2. Histórico de Status (NOVA tabela)** (`backend/app/models/status_history.py`)
+```python
+class Pedido(Base):
+    # ... colunas existentes ...
+    status_anterior: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # ^ Guarda o status anterior quando pausado, para saber para onde retomar
+```
+
+**🔑 Por que `status_anterior` no modelo e não só no histórico?**
+- O histórico registra *o que aconteceu*, mas `status_anterior` diz ao sistema *para onde voltar* quando retomar
+- Evita consultas complexas no histórico para descobrir o status anterior
+
+**1.3. Histórico de Status (NOVA tabela)** (`backend/app/models/status_history.py`)
 
 ```python
 class StatusHistory(Base):
@@ -95,14 +104,14 @@ class StatusHistory(Base):
     pedido_id: Mapped[int] = mapped_column(ForeignKey("pedidos.id"))
     status_anterior: Mapped[str | None]
     status_novo: Mapped[str]
-    alterado_por: Mapped[str]   # "admin" | "sistema" | "cliente"
+    alterado_por: Mapped[str]   # "admin" | "sistema"
     motivo: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     pedido: Mapped["Pedido"] = relationship(back_populates="status_history")
 ```
 
-**1.3. Schema de Histórico** (`backend/app/schemas/pedido.py`)
+**1.4. Schema de Histórico** (`backend/app/schemas/pedido.py`)
 
 ```python
 class StatusHistoryResponse(BaseModel):
@@ -115,192 +124,187 @@ class StatusHistoryResponse(BaseModel):
     created_at: datetime
 ```
 
-**1.4. Atualizar `PedidoResponse`** — incluir `status_history: list[StatusHistoryResponse]`
+**1.5. Atualizar `PedidoResponse`** — incluir `status_history: list[StatusHistoryResponse]`
 
-**1.5. Novo Schema `PedidoPausar` / `PedidoRetomar`**
+**1.6. Novo Schema `PedidoPausar` / `PedidoRetomar`** (`backend/app/schemas/pedido.py`)
 
 ```python
 class PedidoPausar(BaseModel):
-    motivo: str = Field(min_length=3)
+    motivo: str = Field(min_length=3, description="Motivo obrigatório para pausar")
 
-class PedidoRetomar(BaseModel):
-    # Opcional: para qual status retomar (padrão = anterior)
-    status_destino: str | None = None
+class PedidoCancelar(BaseModel):
+    motivo: str = Field(min_length=3, description="Motivo obrigatório para cancelar")
 ```
 
-**1.6. Novas Rotas**
+**1.7. Novas Rotas** (`backend/app/routers/pedidos.py`)
 
 ```
 PUT    /api/v1/pedidos/{id}/pausar       → Pausar pedido com motivo
-PUT    /api/v1/pedidos/{id}/retomar      → Retomar para status anterior (ou especificado)
-GET    /api/v1/pedidos/{id}/historico    → Histórico de status
-POST   /api/v1/pedidos/{id}/avancar      → Avançar 1 step no fluxo automático
+PUT    /api/v1/pedidos/{id}/retomar      → Retomar para status_anterior
+PUT    /api/v1/pedidos/{id}/cancelar     → Cancelar pedido com motivo
+POST   /api/v1/pedidos/{id}/avancar      → Avançar 1 step (pendente→producao→produzido→entrega→entregue)
+GET    /api/v1/pedidos/{id}/historico    → Histórico de status do pedido
 ```
 
-**1.7. Atualizar Dashboard** (`backend/app/routers/dashboard.py`)
+**1.8. Atualizar Dashboard** (`backend/app/routers/dashboard.py`)
 - Incluir `pendente` e `produzido` nos contadores de `pedidos_ativos`
 - `pausado` não conta como ativo
 
-**1.8. Atualizar Notificador** (`backend/app/services/notificador.py`)
+**1.9. Atualizar Notificador** (`backend/app/services/notificador.py`)
 - Adicionar emojis/mensagens para `pendente`, `produzido`, `pausado`
+
+**1.10. Atualizar Router Público** (`backend/app/routers/publico.py`)
+- O tracking público (cliente) deve continuar mostrando apenas os 4 status do fluxo linear (pendente→producao→entrega→entregue)
+- `pausado` e `cancelado` devem aparecer como estados terminais no tracking
 
 ---
 
-### Sprint 2 (4h) — Frontend: Kanban Board
+### Sprint 2 (3h) — Frontend: Visual Kanban (Button-First)
 
-**2.1. Componente KanbanBoard** (NOVO: `frontend/src/components/KanbanBoard.tsx`)
+#### Princípios de Design (aplicando frontend-dev-guidelines adaptado)
+
+| Princípio | Aplicação no Projeto |
+|-----------|---------------------|
+| Suspense-first | ❌ **Não aplicável** — projeto usa `useEffect` + state. Manter padrão existente. |
+| Lazy loading | ✅ KanbanBoard deve ser lazy-loaded (`React.lazy`) |
+| Feature boundaries | ✅ Komponentes novos em `components/`, lógica em `utils/` |
+| Strict TypeScript | ✅ Sem `any`, `import type`, retornos explícitos |
+| Performance | ✅ `useMemo` para listas filtradas, `useCallback` para handlers |
+| Loading/Error | ✅ Usar `PageTransition` existente, `Toast` para feedback |
+| Anti-patterns | ❌ Sem `isLoading` manual — manter padrão do projeto (loading state) |
+
+**2.1. Botões de Ação Rápida nos Cards** (`frontend/src/pages/Pedidos.tsx`)
+
+> **Decisão:** Botões first, drag-and-drop depois. A admin usa o sistema no celular — botões são mais confiáveis que drag-and-drop mobile.
+
+Adicionar em cada linha da tabela (e card mobile) botões de ação contextual:
+
+```
+Status: Pendente → [▶ Iniciar Produção] [⏸️ Pausar] [❌ Cancelar]
+Status: Produção → [✅ Concluir] [⏸️ Pausar] [❌ Cancelar]
+Status: Produzido → [🚚 Sair p/ Entrega] [⏸️ Pausar] [❌ Cancelar]
+Status: Entrega → [🎉 Confirmar Entrega] [⏸️ Pausar] [❌ Cancelar]
+Status: Pausado → [▶ Retomar] [❌ Cancelar]
+Status: Entregue → (sem ações)
+Status: Cancelado → (sem ações)
+```
+
+**2.2. Indicador de Envelhecimento ("Aging")**
+
+Destaque visual para pedidos parados no mesmo status por muito tempo:
+
+| Tempo na coluna | Efeito |
+|----------------|--------|
+| < 30min | Normal |
+| 30min – 1h | ⚠️ Fundo amarelo claro |
+| 1h – 2h | 🟡 Badge "1h parado" |
+| > 2h | 🔴 Badge "2h+ parado" + borda vermelha |
+
+Isso substitui o cancelamento automático — a admin vê o problema e decide, em vez do sistema agir sem aviso.
+
+**2.3. KanbanBoard Component** (NOVO: `frontend/src/components/KanbanBoard.tsx`)
 
 ```tsx
-// Props:
-interface KanbanBoardProps {
-  pedidos: Pedido[]
-  onStatusChange: (pedidoId: number, novoStatus: string) => Promise<void>
-  columns: KanbanColumn[]
-}
-
-interface KanbanColumn {
+interface ColumnConfig {
   status: string
   label: string
   icon: string
-  color: string  // cor de fundo/borda da coluna
-  limit?: number  // WIP limit (opcional)
+  gradient: string  // Tailwind gradient class
+}
+
+interface KanbanBoardProps {
+  pedidos: Pedido[]
+  onStatusChange: (pedidoId: number, novoStatus: string) => Promise<void>
+  onPausar: (pedidoId: number) => void
+  onCancelar: (pedidoId: number) => void
 }
 ```
 
-Features:
-- Layout horizontal rolável com colunas fixas
-- Cada coluna mostra: título, contagem, WIP limit (se configurado)
-- Cards dentro de cada coluna com info resumida: ID, cliente, total, ícones de ação
-- **Drag-and-drop** entre colunas (usando `@dnd-kit/core`)
-- Loading state por coluna durante transição
-- Estado vazio: "Nenhum pedido nesta coluna" com animação
-- Responsivo: em mobile, colunas empilham verticalmente
+**Layout:**
+- **Desktop:** Colunas horizontais roláveis (overflow-x)
+- **Mobile (padrão):** Seções verticais colapsáveis com accordion
+  - Cada seção = um status
+  - Header da seção mostra: ícone + label + contagem + aging alert
+  - Cards em lista vertical dentro de cada seção
+  - Botões de ação em cada card
 
-**2.2. Card de Pedido no Kanban** (NOVO: `frontend/src/components/KanbanCard.tsx`)
+**Estado vazio por coluna:** "Nenhum pedido pendente ✅" com tom otimista
 
-- #ID, nome do cliente, total
-- Tempo desde que está na coluna (ex: "há 30min")
-- Botões de ação rápida: WhatsApp, Detalhe
-- Indicador visual de prioridade (se configurado)
-- Design compacto, com hover states
+**2.4. KanbanCard Component** (NOVO: `frontend/src/components/KanbanCard.tsx`)
 
-**2.3. Integrar Kanban na Página de Pedidos** (`frontend/src/pages/Pedidos.tsx`)
+```
+┌──────────────────────────────┐
+│ #42   Maria Silva    R$ 85,00│
+│ ⏳ 3 itens • Pix • há 30min  │
+│ [▶] [⏸️] [❌] [💬] [🔍]      │
+└──────────────────────────────┘
+```
 
-- Alternador: `[📋 Lista] [📊 Kanban]` — manter ambos disponíveis
-- Estado `viewMode: 'lista' | 'kanban'` no URL (ex: `/admin/pedidos?view=kanban`)
-- Botões de filtro de data e busca funcionam nos dois modos
+- Botões de ação compactos no rodapé
+- Badge de aging se aplicável
+- Link para detalhe (navega para `/admin/pedidos/{id}`)
 
-**2.4. Modal de Transição Manual** (NOVO ou reutilizar `ConfirmDialog`)
+**2.5. Modal de Transição** (NOVO ou estender `ConfirmDialog`)
 
-Ao arrastar card para nova coluna:
-- Se for transição normal → confirmar com toast
-- Se for `pausado` → abrir modal com campo "Motivo da pausa"
-- Se for `cancelado` → abrir modal com campo "Motivo do cancelamento"
-- Se for retorno de `pausado` → mostrar "Retomando pedido"
+| Ação | Modal |
+|------|-------|
+| Avançar status | Toast de confirmação: "Pedido #42 movido para Produção" |
+| Pausar | Modal com campo "Motivo da pausa" (obrigatório, min 3 caracteres) + Confirmar/Cancelar |
+| Cancelar | Modal com campo "Motivo do cancelamento" (obrigatório) + Confirmar/Cancelar |
+| Retomar | Toast de confirmação: "Pedido #42 retomado para Produção" |
 
-**2.5. Atualizar PageHeader / Sidebar**
-- Adicionar contagens por status ao lado dos filtros
-- Badge vermelho na coluna se passar do WIP limit
+**2.6. Integrar na Página Pedidos** (`frontend/src/pages/Pedidos.tsx`)
+
+- Alternador de visualização: `[📋 Lista] [📊 Kanban]`
+- Estado no URL: `/admin/pedidos?view=kanban`
+- Filtros de data e busca funcionam nos dois modos
+- Lazy load do KanbanBoard: `const KanbanBoard = React.lazy(() => import('../components/KanbanBoard'))`
+
+**2.7. Atualizar PageHeader**
+- Adicionar contagens: "📊 12 pendentes · 5 produção · 3 prontos · 2 entrega"
 
 ---
 
-### Sprint 3 (2h) — Automações Inteligentes
+### Sprint 3 (2h) — Histórico + Offline + Polimento
 
-**3.1. Agendador de Produção** (Backend)
+**3.1. Timeline no Detalhe do Pedido** (`frontend/src/pages/PedidoDetalhe.tsx`)
 
-```python
-# Em app/services/producao_scheduler.py
-async def avancar_pendentes_para_producao():
-    """Todo dia às 8h, avança pedidos pendentes → producao
-    se tiverem data_entrega para hoje."""
-```
-
-**Tarefa recorrente:** Usar BackgroundTasks ou schedule leve no startup.
-
-**3.2. Cancelamento Automático por Inatividade**
-
-```python
-async def cancelar_pendentes_expirados():
-    """Cancela pedidos pendentes há mais de 48h
-    (configurável via site_config 'pedidos_expiracao_horas')."""
-```
-
-**3.3. Sugestão de Priorização**
-
-No backend, endpoint `GET /api/v1/pedidos/sugestoes-prioridade`:
-- Pedidos com `data_entrega` mais próxima → maior prioridade
-- Pedidos com muitos itens → maior prioridade
-- Pedidos parados há muito tempo → maior prioridade
-- Retorna score (0-100) para ordenar cards no kanban
-
-**3.4. Notificações Automáticas**
-
-- Ao entrar em `producao`: notificar admin "Pedido #X entrou em produção"
-- Ao entrar em `produzido`: notificar admin "Pedido #X está pronto"
-- Ao entrar em `entregue`: notificar admin "Pedido #X foi entregue"
-
----
-
-### Sprint 4 (1h) — Histórico de Status
-
-**4.1. Timeline no Detalhe do Pedido** (`frontend/src/pages/PedidoDetalhe.tsx`)
-
-- Abaixo do progresso de status, adicionar timeline vertical:
-```
-⏳ Pendente — há 2h (admin)
-👩‍🍳 Produção — há 1h30min (sistema: agendador)
-⏸️ Pausado — há 45min (admin: "Falta queijo")
-👩‍🍳 Retomado — há 30min (admin)
-✅ Produzido — há 5min (admin)
-```
-
-- Cada entrada mostra: status, timestamp relativo, quem alterou, motivo (se houver)
-
-**4.2. Indicador de Tempo em Cada Status**
-
-- Coluna "Tempo em produção" no kanban e na lista
-- Destacar em vermelho se um pedido está em `pendente` há mais tempo que o esperado
-
----
-
-## 🧱 Arquitetura de Componentes
+Após o bloco de progresso de status, adicionar:
 
 ```
-Pedidos.tsx
-├── ViewToggle (Lista/Kanban)
-├── Filtros de data e busca (reutilizado)
-│
-├── [view=lista]
-│   └── Tabela de pedidos (existente, com colunas de status atualizadas)
-│
-├── [view=kanban]
-│   ├── KanbanBoard
-│   │   ├── KanbanColumn (pendente)
-│   │   │   └── KanbanCard × N
-│   │   ├── KanbanColumn (producao)
-│   │   │   └── KanbanCard × N
-│   │   ├── KanbanColumn (produzido)
-│   │   │   └── KanbanCard × N
-│   │   ├── KanbanColumn (entrega)
-│   │   │   └── KanbanCard × N
-│   │   ├── KanbanColumn (entregue)
-│   │   │   └── KanbanCard × N
-│   │   ├── KanbanColumn (pausado)
-│   │   │   └── KanbanCard × N
-│   │   └── KanbanColumn (cancelado)
-│   │       └── KanbanCard × N
-│   │
-│   └── StatusModal (confirmar/cancelar/pausar)
-│
-└── PedidoDetalhe.tsx (links)
-    └── StatusHistoryTimeline
+📋 Histórico de Status
+─────────────────────
+⏳ Pendente — há 2h
+👩‍🍳 Produção — há 1h30min
+⏸️ Pausado — há 45min (motivo: "Falta queijo")
+👩‍🍳 Retomado — há 30min
+✅ Produzido — há 5min
 ```
 
----
+- Cada entrada com timestamp relativo e motivo (se houver)
+- Scroll reverso (mais recente primeiro)
 
-## 📦 Dependências
+**3.2. Offline Support** (`frontend/src/services/offlineClient.ts`)
 
-### Frontend (novas)
+- `atualizarStatusOffline(id, novoStatus)` — usar mutation queue para transições offline
+- Cache do kanban (status agrupados) para exibição offline
+- Sincronizar fila ao ficar online (reutilizar `SyncStatus` existente)
+
+**3.3. Error Recovery**
+
+- Se uma transição falhar (rede), mostrar toast de erro e manter o card na coluna original
+- Botão "Tentar novamente" ao lado do card que falhou
+- Usar `mutationQueue` existente para retry automático quando online
+
+**3.4. Drag-and-Drop como Enhancement (PÓS-MVP)**
+
+> ⚠️ **Decisão FFCI:** Adiar @dnd-kit para versão 2.0 do kanban.
+> - Botões resolvem 90% do caso de uso
+> - Admin usa celular — DnD mobile é frustrante
+> - Economiza 15KB+ no bundle
+> - Reduz complexidade de estado significativamente
+
+Se implementado no futuro:
 ```json
 {
   "@dnd-kit/core": "^6.3.0",
@@ -308,182 +312,244 @@ Pedidos.tsx
 }
 ```
 
-**Alternativa:** `react-beautiful-dnd` (mantido? Não — não atualiza mais). Usar `@dnd-kit` que é o padrão da indústria em 2026.
+---
 
-### Backend (novas)
-Nenhuma dependência externa. Apenas:
-- Migration Alembic para novo ENUM + tabela `status_history`
-- `apscheduler` ou similar para tarefas agendadas (opcional)
+## 🧱 Arquitetura de Componentes (Final)
+
+```
+Pedidos.tsx
+├── ViewToggle (Lista/Kanban)
+├── Filtros de data e busca (reutilizado)
+├── Contagens rápidas por status
+│
+├── [view=lista]
+│   └── Tabela de pedidos (existente atualizada)
+│       └── Botões de ação contextual por linha
+│
+├── [view=kanban] → lazy loaded
+│   └── KanbanBoard
+│       ├── Coluna/Secao Pendente (accordion mobile)
+│       │   └── KanbanCard × N
+│       ├── Coluna/Secao Produção
+│       │   └── KanbanCard × N
+│       ├── Coluna/Secao Produzido
+│       │   └── KanbanCard × N
+│       ├── Coluna/Secao Entrega
+│       │   └── KanbanCard × N
+│       ├── Coluna/Secao Entregue
+│       │   └── KanbanCard × N
+│       ├── Coluna/Secao Pausado
+│       │   └── KanbanCard × N
+│       └── Coluna/Secao Cancelado
+│           └── KanbanCard × N
+│
+├── ModalPausar (ConfirmDialog estendido)
+├── ModalCancelar (ConfirmDialog estendido)
+└── Toast para feedback (reutilizado)
+
+PedidoDetalhe.tsx
+└── StatusHistoryTimeline (novo componente)
+```
 
 ---
 
 ## 🗄️ Migração de Dados (Alembic)
 
-### Migration 1: Alterar ENUM
+### Migration 1: Adicionar colunas + alterar ENUM
 
-```sql
--- SQLite não suporta ALTER ENUM diretamente
--- Estratégia: CREATE TABLE novo, INSERT, DROP TABLE antigo, RENAME
-```
+SQLite não suporta ALTER ENUM. Estratégia:
 
-Passos:
-1. Criar tabela temporária com novos status
-2. Migrar `recebido → pendente`
-3. Copiar dados
-4. Renomear
+1. Criar tabela `pedidos_v2` com:
+   - Todas as colunas existentes + `status_anterior TEXT`
+   - CHECK constraint para novos status
+2. `INSERT INTO pedidos_v2 SELECT *, NULL FROM pedidos` (mapeando `recebido→pendente`)
+3. `DROP TABLE pedidos`
+4. `ALTER TABLE pedidos_v2 RENAME TO pedidos`
 
 ### Migration 2: Criar status_history
 
 ```sql
 CREATE TABLE status_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pedido_id INTEGER NOT NULL REFERENCES pedidos(id),
+    pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
     status_anterior TEXT,
     status_novo TEXT NOT NULL,
     alterado_por TEXT NOT NULL DEFAULT 'sistema',
     motivo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_status_history_pedido ON status_history(pedido_id);
 ```
 
 ### Migration 3: Seed de histórico
 
-Para pedidos existentes, criar entrada inicial no `status_history`:
 ```sql
 INSERT INTO status_history (pedido_id, status_anterior, status_novo, alterado_por, created_at)
-SELECT id, NULL, status, 'sistema', created_at FROM pedidos;
+SELECT id, NULL, CASE WHEN status = 'recebido' THEN 'pendente' ELSE status END, 'sistema', created_at
+FROM pedidos;
 ```
 
 ---
 
-## 🔄 Fluxos de Transição Automática
+## 🔄 Fluxos de Transição (Detalhados)
 
-### Fluxo 1: Avanço Padrão (botão "Avançar" ou drag)
+### Fluxo 1: Avanço Padrão (botão "Avançar" ou ação rápida)
 
 ```
-Status atual → Próximo status na ordem canônica
+Status atual → Próximo status
 pendente     → producao
 producao     → produzido
 produzido    → entrega
 entrega      → entregue
 ```
 
-**Regras:**
-- Só avança se o status atual for um dos 5 do fluxo canônico
-- `pausado` e `cancelado` não podem "avançar" — precisam de ação específica
-- Ao avançar, registrar `alterado_por = "admin"` (ou `"sistema"` se automático)
+🔧 Backend:
+1. Valida se status atual está no fluxo canônico
+2. Determina próximo status
+3. Salva histórico com `alterado_por = "admin"`
+4. Retorna pedido atualizado
 
 ### Fluxo 2: Pausar/Retomar
 
 ```
 qualquer status → pausado
-  ├── Exige motivo obrigatório
-  ├── Salva qual era o status anterior
-  └── Notifica admin
+├── Salva status atual em `status_anterior` do Pedido
+├── Cria registro no histórico com motivo
+└── Notifica admin
 
-pausado → status anterior (ou especificado)
-  ├── Motivo opcional
-  └── Notifica admin
+pausado → status_anterior (ou especificado)
+├── Lê `status_anterior` do Pedido
+├── Cria registro no histórico
+└── Limpa `status_anterior`
+```
+
+🔧 Backend:
+```python
+@pausar
+pedido.status_anterior = pedido.status  # salva antes de mudar
+pedido.status = "pausado"
+# cria StatusHistory(status_anterior=antigo, status_novo="pausado", motivo=...)
+
+@retomar
+destino = pedido.status_anterior or "pendente"
+pedido.status = destino
+pedido.status_anterior = None
+# cria StatusHistory(status_anterior="pausado", status_novo=destino)
 ```
 
 ### Fluxo 3: Cancelar
 
 ```
 qualquer status → cancelado
-  ├── Exige motivo obrigatório
-  ├── Se pendente há >48h: automático
-  └── Notifica admin
+├── Cria registro no histórico com motivo
+└── Notifica admin
 ```
 
 ---
 
-## 🎨 Design da Interface Kanban
+## 🎨 Design da Interface
 
-### Colunas
+### Colunas (Desktop)
 
-| Coluna | Fundo | Borda | Header |
-|--------|-------|-------|--------|
-| ⏳ Pendente | `bg-amber-50` | `border-amber-200` | `■ bg-amber-500` |
-| 👩‍🍳 Produção | `bg-blue-50` | `border-blue-200` | `■ bg-blue-500` |
-| ✅ Produzido | `bg-emerald-50` | `border-emerald-200` | `■ bg-emerald-500` |
-| 🚚 Entrega | `bg-purple-50` | `border-purple-200` | `■ bg-purple-500` |
-| 🎉 Entregue | `bg-green-50` | `border-green-200` | `■ bg-green-500` |
-| ⏸️ Pausado | `bg-orange-50` | `border-orange-200` | `■ bg-orange-500` |
-| ❌ Cancelado | `bg-red-50` | `border-red-200` | `■ bg-red-500` |
+| Coluna | Fundo | Header | Largura |
+|--------|-------|--------|---------|
+| ⏳ Pendente | `bg-amber-50` | `■ bg-amber-500` | 280px |
+| 👩‍🍳 Produção | `bg-blue-50` | `■ bg-blue-500` | 280px |
+| ✅ Produzido | `bg-emerald-50` | `■ bg-emerald-500` | 280px |
+| 🚚 Entrega | `bg-purple-50` | `■ bg-purple-500` | 280px |
+| 🎉 Entregue | `bg-green-50` | `■ bg-green-500` | 280px |
+| ⏸️ Pausado | `bg-orange-50` | `■ bg-orange-500` | 280px |
+| ❌ Cancelado | `bg-red-50` | `■ bg-red-500` | 280px |
 
-### Card
+### Mobile (Acordeão)
+
+```
+▼ ⏳ Pendente (12)  ⚠️ 1 há mais de 1h
+  ┌─ Card ─────────────────────┐
+  │ #42  Maria     R$ 85,00    │
+  │ 3 itens • Pix • há 30min   │
+  │ [▶Iniciar] [⏸️] [❌] [💬]  │
+  └────────────────────────────┘
+  ┌─ Card ─────────────────────┐
+  │ #38  João      R$ 120,00   │
+  │ ...                        │
+  └────────────────────────────┘
+
+▶ 👩‍🍳 Produção (5)
+▶ ✅ Produzido (3)
+▶ 🚚 Entrega (2)
+▶ 🎉 Entregue (15)
+▶ ⏸️ Pausado (1)
+▶ ❌ Cancelado (2)
+```
+
+### Card (Kanban)
 
 ```
 ┌─────────────────────────┐
-│ #42  ───  há 30min      │
+│ #42  ───  ⏰ há 30min   │  ← aging indicator
 │ Maria Silva              │
-│ R$ 85,00  💬 🔍         │
-│─────────────────────────│
+│ R$ 85,00                │
 │ 3 itens • Pix           │
+│ [▶] [⏸️] [❌] [💬] [🔍]  │  ← action buttons
 └─────────────────────────┘
 ```
 
-### WIP Limits (configuráveis via `site_config`)
+---
 
-| Coluna | Limite Sugerido |
-|--------|----------------|
-| Pendente | Sem limite |
-| Produção | 5 |
-| Produzido | 10 |
-| Entrega | 3 |
-| Entregue | Sem limite |
-| Pausado | Sem limite |
-| Cancelado | Sem limite |
+## 📦 Dependências
+
+### Frontend (novas)
+Nenhuma — o MVP usa apenas botões. @dnd-kit fica para enhancement futuro.
+
+### Backend (novas)
+Nenhuma — apenas migration Alembic.
 
 ---
 
 ## 🚫 Não Escopo (nesta fase)
 
-- Integração com iFood/WhatsApp para criação automática de pedidos
+- Drag-and-drop (@dnd-kit fica para enhancement futuro)
+- Agendador/automações temporais
+- Priorização por score
+- WIP limits configuráveis
+- Integração com iFood/WhatsApp para criação automática
 - Geolocalização de entregadores
-- Múltiplos usuários admin (roles/permissões)
-- Notificações push para cliente
-- Estimativa de tempo por coluna (ex: "tempo médio em produção: 45min")
+- Múltiplos usuários admin
 - Impressão de comandas
 
 ---
 
 ## 📊 Métricas de Sucesso
 
-1. **Tempo médio entre pedido e entrada em produção** — deve reduzir com automação
-2. **Pedidos pausados por mais de 1h** — deve reduzir com visibilidade
-3. **Uso do kanban vs lista** — métrica de adoção
-4. **Transições automáticas vs manuais** — quanto o sistema está ajudando
+1. **Tempo para transicionar pedido (pendente→producao)** — deve reduzir com visibilidade
+2. **Quantidade de pedidos pausados por >1h** — deve reduzir pois admin vê aging
+3. **Adoção do kanban vs lista** — medir por view mode escolhido
 
 ---
 
 ## Exemplo de Uso
 
 ```
-🧑‍🍳 Cliente liga: "Quero 20 coxinhas para entregar às 18h"
+🧑‍🍳 Admin cria pedido → status "pendente"
 
-Admin cria pedido → status "pendente" (automático)
-  ⏳ Card aparece na coluna Pendente
+Admin vê no kanban:
+  ⏳ Pendente (3)
+  👩‍🍳 Produção (2)
+  ✅ Produzido (1) ← precisa despachar!
+  🚚 Entrega (0)
+  🎉 Entregue (15)
 
-Às 14h, admin arrasta card para "Produção"
-  👩‍🍳 Card vai para coluna Produção
-  📱 WhatsApp automático para cliente: "Seu pedido está sendo preparado!"
+Admin clica [▶ Iniciar] no pedido #42 → vai para Produção
+  Toast: "Pedido #42 em produção"
+  Coluna Produção agora mostra (3)
 
-Quando todas as coxinhas são produzidas → admin clica "Concluir Produção"
-  ✅ Card vai para coluna Produzido
+Admin percebe pedido #38 pendente há 2h → destaque vermelho
+  Decide pausar: clica [⏸️] → modal "Motivo: Aguardando cliente confirmar"
+  Card vai para Pausado
 
-Às 17h30, admin arrasta para "Entrega"
-  🚚 Card vai para coluna Entrega
-  📱 WhatsApp: "Seu pedido saiu para entrega!"
-
-Cliente recebe → admin arrasta para "Entregue"
-  🎉 Card vai para coluna Entregue
-  📱 WhatsApp: "Seu pedido foi entregue! 🎉"
-
-Se faltar queijo:
-  ⏸️ Admin pausa o pedido com motivo "Falta queijo"
-  Card vai para coluna Pausado
-  Quando queijo chegar, admin retoma para "Produção"
+Mais tarde admin retoma: clica [▶ Retomar] → volta para Pendente
 ```
 
 ---
@@ -492,22 +558,30 @@ Se faltar queijo:
 
 | Arquivo | Tipo | Mudança |
 |---------|------|---------|
-| `backend/app/models/pedido.py` | Model | Atualizar StatusPedido enum |
+| `backend/app/models/pedido.py` | Model | Atualizar StatusPedido + add status_anterior |
 | `backend/app/models/__init__.py` | Model | Adicionar import |
 | `backend/app/models/status_history.py` | Model | NOVO |
 | `backend/alembic/versions/...` | Migration | 3 migrations |
-| `backend/app/schemas/pedido.py` | Schema | Adicionar StatusHistory |
-| `backend/app/routers/pedidos.py` | Router | +4 rotas, atualizar fluxo |
+| `backend/app/schemas/pedido.py` | Schema | Adicionar StatusHistoryResponse, PedidoPausar, PedidoCancelar |
+| `backend/app/routers/pedidos.py` | Router | +5 rotas, atualizar fluxo |
+| `backend/app/routers/publico.py` | Router | Atualizar tracking p/ novos status |
 | `backend/app/routers/dashboard.py` | Router | Atualizar contadores |
 | `backend/app/services/notificador.py` | Service | Novos status |
-| `backend/app/services/producao_scheduler.py` | Service | NOVO |
-| `frontend/src/components/KanbanBoard.tsx` | Component | NOVO |
+| `frontend/src/components/KanbanBoard.tsx` | Component | NOVO (lazy loaded) |
 | `frontend/src/components/KanbanCard.tsx` | Component | NOVO |
-| `frontend/src/components/StatusModal.tsx` | Component | NOVO |
 | `frontend/src/components/StatusHistoryTimeline.tsx` | Component | NOVO |
-| `frontend/src/pages/Pedidos.tsx` | Page | +Kanban view |
+| `frontend/src/pages/Pedidos.tsx` | Page | +Kanban view + botões de ação |
 | `frontend/src/pages/PedidoDetalhe.tsx` | Page | +Timeline |
-| `frontend/src/utils/pedido.ts` | Util | Atualizar constantes |
-| `frontend/src/api/client.ts` | API | +novos endpoints |
-| `frontend/src/services/offlineClient.ts` | Service | Atualizar cache |
-| `frontend/package.json` | Config | +@dnd-kit |
+| `frontend/src/utils/pedido.ts` | Util | Atualizar constantes (STATUS_FLOW, cores) |
+| `frontend/src/api/client.ts` | API | +5 novos endpoints |
+| `frontend/src/services/offlineClient.ts` | Service | +transições offline |
+| `frontend/src/utils/pedido.ts` | Util | +funções aging, +constant status_anterior |
+
+---
+
+## Histórico de Revisões
+
+| Data | Versão | Mudanças |
+|------|--------|----------|
+| 2026-07-01 | v1 | Versão inicial (10h, 4 sprints, FFCI 4) |
+| 2026-07-01 | v2 | **Revisão FFCI:** Removido WIP limits, scheduler, auto-cancel, priority scoring. @dnd-kit movido para enhancement. Adicionado status_anterior, aging indicator, offline suporte. Reduzido para 8h (3 sprints). FFCI agora 7. |
