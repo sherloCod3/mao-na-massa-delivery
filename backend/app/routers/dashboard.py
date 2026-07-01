@@ -66,7 +66,7 @@ async def dashboard_hoje(session: AsyncSession = Depends(get_session)):
 
     for pedido in pedidos_hoje:
         status_counts[pedido.status] = status_counts.get(pedido.status, 0) + 1
-        if pedido.status in ("recebido", "producao", "entrega"):
+        if pedido.status in ("pendente", "producao", "produzido", "entrega"):
             ativos += 1
             # Estimate cost even for active orders (based on what's been produced so far)
             custo_total += await _calcular_custo_pedido(pedido)
@@ -180,7 +180,7 @@ async def dashboard_top_produtos(
     session: AsyncSession = Depends(get_session),
 ):
     """Top selling products by quantity."""
-    from sqlalchemy import desc as sql_desc
+    from sqlalchemy import desc as sql_desc  # pylint: disable=import-outside-toplevel
 
     query = (
         select(ItemPedido)

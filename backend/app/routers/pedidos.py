@@ -11,14 +11,18 @@ from app.auth import limiter, verify_admin
 from app.database import get_session
 from app.errors import NotFoundError, ValidationError
 from app.models.item_pedido import ItemPedido
-from app.models.pedido import Pedido, StatusPedido
+from app.models.pedido import STATUS_FLOW, Pedido, StatusPedido
 from app.models.produto import Produto
+from app.models.status_history import StatusHistory
 from app.models.variacao import Variacao
 from app.schemas.pedido import (
     ItemPedidoCreate,
+    PedidoCancelar,
     PedidoCreate,
+    PedidoPausar,
     PedidoResponse,
     PedidoUpdateStatus,
+    StatusHistoryResponse,
 )
 from app.services.notificador import notificar_novo_pedido, notificar_status_pedido
 
@@ -44,15 +48,17 @@ def _serialize_item(item: ItemPedido) -> dict:
     }
 
 
-async def _notificar_pedido_criado(
+async def _notificar_pedido_criado(  # pylint: disable=too-many-positional-arguments
     pedido_id: int, cliente_nome: str, total: float, whatsapp: str | None, token_acesso: str | None
 ):
     """Busca os nomes das variações e notifica (roda em BackgroundTask)."""
-    import logging
+    import logging  # pylint: disable=import-outside-toplevel
 
     logger = logging.getLogger(__name__)
 
-    from app.database import async_session as _async_session
+    from app.database import (  # pylint: disable=import-outside-toplevel
+        async_session as _async_session,
+    )
 
     try:
         async with _async_session() as s:
@@ -74,7 +80,7 @@ async def _notificar_pedido_criado(
         itens_resumo = "\n".join(
             f"  • {q}x {p_nome} ({v_nome}) — R$ {pu:.2f}" for _, q, pu, v_nome, p_nome in rows
         )
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.warning("Erro ao buscar itens do pedido %d para notificação: %s", pedido_id, exc)
         itens_resumo = ""
 
@@ -87,12 +93,12 @@ async def _notificar_pedido_criado(
             whatsapp=whatsapp,
             token_acesso=token_acesso,
         )
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception("Falha ao notificar novo pedido %d: %s", pedido_id, exc)
 
 
 @router.get("", response_model=list[PedidoResponse])
-async def listar_pedidos(
+async def listar_pedidos(  # pylint: disable=too-many-positional-arguments
     status_filter: str | None = Query(None, alias="status"),
     data_inicio: date | None = None,
     data_fim: date | None = None,
@@ -102,7 +108,14 @@ async def listar_pedidos(
     _: None = Depends(verify_admin),
 ):
     offset = (pagina - 1) * limite
-    query = select(Pedido).options(selectinload(Pedido.itens)).order_by(Pedido.created_at.desc())
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .order_by(Pedido.created_at.desc())
+    )
 
     if status_filter:
         query = query.where(Pedido.status == status_filter)
@@ -117,8 +130,8 @@ async def listar_pedidos(
 
 
 @router.post("", response_model=PedidoResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
-async def criar_pedido(
+@limiter.limit("100/minute")
+async def criar_pedido(  # pylint: disable=unused-argument
     request: Request,
     data: PedidoCreate,
     background_tasks: BackgroundTasks,
@@ -130,7 +143,7 @@ async def criar_pedido(
         cliente_nome=data.cliente_nome,
         cliente_whatsapp=data.cliente_whatsapp,
         token_acesso=str(uuid.uuid4()),
-        status=StatusPedido.recebido.value,
+        status=StatusPedido.pendente.value,
         forma_pagamento=data.forma_pagamento,
         observacoes=data.observacoes,
         total=total,
@@ -151,11 +164,27 @@ async def criar_pedido(
         )
         pedido.itens.append(item)
 
+    # Seed initial status_history entry
+    pedido.status_history.append(
+        StatusHistory(
+            status_anterior=None,
+            status_novo=StatusPedido.pendente.value,
+            alterado_por="sistema",
+        )
+    )
+
     session.add(pedido)
     await session.commit()
 
-    # Re-fetch with eager-loaded items
-    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido.id)
+    # Re-fetch with eager-loaded items and status history
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido.id)
+    )
     result = await session.execute(query)
     pedido = result.scalar_one()
 
@@ -178,7 +207,14 @@ async def obter_pedido(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido_id)
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
@@ -194,7 +230,14 @@ async def atualizar_status_pedido(
     session: AsyncSession = Depends(get_session),
     _: None = Depends(verify_admin),
 ):
-    query = select(Pedido).options(selectinload(Pedido.itens)).where(Pedido.id == pedido_id)
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
     result = await session.execute(query)
     pedido = result.scalar_one_or_none()
     if not pedido:
@@ -237,5 +280,283 @@ async def cancelar_pedido(
     pedido = result.scalar_one_or_none()
     if not pedido:
         raise NotFoundError("Pedido", pedido_id)
+    status_anterior = pedido.status
     pedido.status = StatusPedido.cancelado.value
+    await _registrar_historico(
+        session,
+        pedido_id,
+        status_anterior,
+        StatusPedido.cancelado.value,
+        alterado_por="admin",
+        motivo="Cancelado via endpoint DELETE",
+    )
     await session.commit()
+
+
+async def _registrar_historico(
+    session: AsyncSession,
+    pedido_id: int,
+    status_anterior: str | None,
+    status_novo: str,
+    *,
+    alterado_por: str = "admin",
+    motivo: str | None = None,
+) -> StatusHistory:
+    """Registra uma mudança de status no histórico."""
+    historico = StatusHistory(
+        pedido_id=pedido_id,
+        status_anterior=status_anterior,
+        status_novo=status_novo,
+        alterado_por=alterado_por,
+        motivo=motivo,
+    )
+    session.add(historico)
+    return historico
+
+
+@router.put("/{pedido_id}/pausar", response_model=PedidoResponse)
+async def pausar_pedido(
+    pedido_id: int,
+    data: PedidoPausar,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
+):
+    """Pausa um pedido, salvando o status anterior para retomar depois."""
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
+    result = await session.execute(query)
+    pedido = result.scalar_one_or_none()
+    if not pedido:
+        raise NotFoundError("Pedido", pedido_id)
+
+    if pedido.status == StatusPedido.pausado.value:
+        raise ValidationError(message="Pedido já está pausado")
+    if pedido.status == StatusPedido.cancelado.value:
+        raise ValidationError(message="Pedido cancelado não pode ser pausado")
+    if pedido.status == StatusPedido.entregue.value:
+        raise ValidationError(message="Pedido entregue não pode ser pausado")
+
+    status_anterior = pedido.status
+    pedido.status_anterior = status_anterior
+    pedido.status = StatusPedido.pausado.value
+
+    await _registrar_historico(
+        session, pedido_id, status_anterior, StatusPedido.pausado.value, motivo=data.motivo
+    )
+    await session.commit()
+
+    # Re-fetch
+    result = await session.execute(query)
+    pedido = result.scalar_one()
+
+    background_tasks.add_task(
+        notificar_status_pedido,
+        pedido_id=pedido.id,
+        cliente_nome=pedido.cliente_nome,
+        status_novo=pedido.status,
+        total=pedido.total,
+        whatsapp=pedido.cliente_whatsapp,
+        token_acesso=pedido.token_acesso,
+    )
+
+    return pedido
+
+
+@router.put("/{pedido_id}/retomar", response_model=PedidoResponse)
+async def retomar_pedido(
+    pedido_id: int,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
+):
+    """Retoma um pedido pausado, voltando ao status anterior."""
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
+    result = await session.execute(query)
+    pedido = result.scalar_one_or_none()
+    if not pedido:
+        raise NotFoundError("Pedido", pedido_id)
+
+    if pedido.status != StatusPedido.pausado.value:
+        raise ValidationError(message="Pedido não está pausado")
+
+    destino = pedido.status_anterior or StatusPedido.pendente.value
+    status_anterior = pedido.status
+    pedido.status = destino
+    pedido.status_anterior = None
+
+    await _registrar_historico(
+        session, pedido_id, status_anterior, destino, motivo="Pedido retomado"
+    )
+    await session.commit()
+
+    # Re-fetch
+    result = await session.execute(query)
+    pedido = result.scalar_one()
+
+    background_tasks.add_task(
+        notificar_status_pedido,
+        pedido_id=pedido.id,
+        cliente_nome=pedido.cliente_nome,
+        status_novo=pedido.status,
+        total=pedido.total,
+        whatsapp=pedido.cliente_whatsapp,
+        token_acesso=pedido.token_acesso,
+    )
+
+    return pedido
+
+
+@router.put("/{pedido_id}/cancelar", response_model=PedidoResponse)
+async def cancelar_pedido_com_motivo(
+    pedido_id: int,
+    data: PedidoCancelar,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
+):
+    """Cancela um pedido com motivo obrigatório."""
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
+    result = await session.execute(query)
+    pedido = result.scalar_one_or_none()
+    if not pedido:
+        raise NotFoundError("Pedido", pedido_id)
+
+    if pedido.status == StatusPedido.cancelado.value:
+        raise ValidationError(message="Pedido já está cancelado")
+    if pedido.status == StatusPedido.entregue.value:
+        raise ValidationError(message="Pedido entregue não pode ser cancelado")
+
+    status_anterior = pedido.status
+    pedido.status = StatusPedido.cancelado.value
+    pedido.status_anterior = None
+
+    await _registrar_historico(
+        session,
+        pedido_id,
+        status_anterior,
+        StatusPedido.cancelado.value,
+        motivo=data.motivo,
+    )
+    await session.commit()
+
+    # Re-fetch
+    result = await session.execute(query)
+    pedido = result.scalar_one()
+
+    background_tasks.add_task(
+        notificar_status_pedido,
+        pedido_id=pedido.id,
+        cliente_nome=pedido.cliente_nome,
+        status_novo=pedido.status,
+        total=pedido.total,
+        whatsapp=pedido.cliente_whatsapp,
+        token_acesso=pedido.token_acesso,
+    )
+
+    return pedido
+
+
+@router.post("/{pedido_id}/avancar", response_model=PedidoResponse)
+async def avancar_pedido(
+    pedido_id: int,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
+):
+    """Avança o pedido para o próximo status no fluxo canônico.
+
+    pendente → producao → produzido → entrega → entregue
+    """
+    query = (
+        select(Pedido)
+        .options(
+            selectinload(Pedido.itens),
+            selectinload(Pedido.status_history),
+        )
+        .where(Pedido.id == pedido_id)
+    )
+    result = await session.execute(query)
+    pedido = result.scalar_one_or_none()
+    if not pedido:
+        raise NotFoundError("Pedido", pedido_id)
+
+    if pedido.status not in STATUS_FLOW:
+        raise ValidationError(
+            message=f"Pedido com status '{pedido.status}' não pode avançar no fluxo. "
+            f"Use pausar/retomar/cancelar para ações específicas."
+        )
+
+    current_idx = STATUS_FLOW.index(pedido.status)
+    if current_idx >= len(STATUS_FLOW) - 1:
+        raise ValidationError(message="Pedido já está no último status do fluxo")
+
+    status_anterior = pedido.status
+    proximo_status = STATUS_FLOW[current_idx + 1]
+    pedido.status = proximo_status
+
+    await _registrar_historico(
+        session,
+        pedido_id,
+        status_anterior,
+        proximo_status,
+    )
+    await session.commit()
+
+    # Re-fetch
+    result = await session.execute(query)
+    pedido = result.scalar_one()
+
+    background_tasks.add_task(
+        notificar_status_pedido,
+        pedido_id=pedido.id,
+        cliente_nome=pedido.cliente_nome,
+        status_novo=pedido.status,
+        total=pedido.total,
+        whatsapp=pedido.cliente_whatsapp,
+        token_acesso=pedido.token_acesso,
+    )
+
+    return pedido
+
+
+@router.get("/{pedido_id}/historico", response_model=list[StatusHistoryResponse])
+async def historico_pedido(
+    pedido_id: int,
+    session: AsyncSession = Depends(get_session),
+    _: None = Depends(verify_admin),
+):
+    """Retorna o histórico de status de um pedido."""
+    query = select(Pedido).where(Pedido.id == pedido_id)
+    result = await session.execute(query)
+    pedido = result.scalar_one_or_none()
+    if not pedido:
+        raise NotFoundError("Pedido", pedido_id)
+
+    hist_query = (
+        select(StatusHistory)
+        .where(StatusHistory.pedido_id == pedido_id)
+        .order_by(StatusHistory.created_at.desc())
+    )
+    hist_result = await session.execute(hist_query)
+    return hist_result.scalars().all()

@@ -5,13 +5,14 @@ import { obterTrackingOffline } from '../services/offlineClient'
 import type { Pedido } from '../api/client'
 
 const statusInfo: Record<string, { icon: string; label: string; stepLabel: string; color: string; Icon: typeof CheckCircle2 }> = {
-  recebido: { icon: '📥', label: 'Pedido Recebido', stepLabel: 'Seu pedido foi recebido e logo começaremos a preparar!', color: 'from-blue-500 to-blue-600', Icon: CheckCircle2 },
-  producao: { icon: '👩‍🍳', label: 'Em Produção', stepLabel: 'Seus salgados estão sendo preparados com todo carinho!', color: 'from-yellow-500 to-orange-500', Icon: UtensilsCrossed },
+  pendente: { icon: '⏳', label: 'Pedido Recebido', stepLabel: 'Seu pedido foi recebido e logo começaremos a preparar!', color: 'from-amber-500 to-amber-600', Icon: Clock },
+  producao: { icon: '👩‍🍳', label: 'Em Produção', stepLabel: 'Seus salgados estão sendo preparados com todo carinho!', color: 'from-blue-500 to-blue-600', Icon: UtensilsCrossed },
+  produzido: { icon: '✅', label: 'Produzido', stepLabel: 'A produção foi concluída! Em breve sairá para entrega.', color: 'from-emerald-500 to-emerald-600', Icon: CheckCircle2 },
   entrega: { icon: '🚚', label: 'Saiu para Entrega', stepLabel: 'Seu pedido está a caminho! Fique de olho.', color: 'from-purple-500 to-purple-600', Icon: Truck },
-  entregue: { icon: '✅', label: 'Entregue!', stepLabel: 'Seu pedido foi entregue. Bom apetite! 🎉', color: 'from-green-500 to-emerald-600', Icon: CheckCircle2 },
+  entregue: { icon: '🎉', label: 'Entregue!', stepLabel: 'Seu pedido foi entregue. Bom apetite! 🎉', color: 'from-green-500 to-emerald-600', Icon: CheckCircle2 },
 }
 
-const steps = ['recebido', 'producao', 'entrega', 'entregue']
+const steps = ['pendente', 'producao', 'entrega', 'entregue']
 
 function TempoRelativo({ date }: { date: string }) {
   const [label, setLabel] = useState('')
@@ -70,8 +71,66 @@ export default function PublicTracking() {
     </div>
   )
 
+  // Handle terminal statuses for public tracking
+  if (pedido.status === 'cancelado') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
+        <div className="bg-gradient-to-r from-red-500 to-red-600 h-2" />
+        <div className="max-w-lg mx-auto px-4 py-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/50 mb-8">
+            <CookingPot className="w-5 h-5 text-massa-600" />
+            <span className="font-bold text-primary">Mão na Massa</span>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8">
+            <div className="text-6xl mb-4">❌</div>
+            <h1 className="text-xl font-bold text-primary mb-2">Pedido Cancelado</h1>
+            <p className="text-gray-500 text-sm">Este pedido foi cancelado. Entre em contato para mais informações.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (pedido.status === 'pausado') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 h-2" />
+        <div className="max-w-lg mx-auto px-4 py-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/50 mb-8">
+            <CookingPot className="w-5 h-5 text-massa-600" />
+            <span className="font-bold text-primary">Mão na Massa</span>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8">
+            <div className="text-6xl mb-4">⏸️</div>
+            <h1 className="text-xl font-bold text-primary mb-2">Pedido Pausado</h1>
+            <p className="text-gray-500 text-sm">O preparo do seu pedido foi pausado. Em breve atualizaremos o status.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (pedido.status === 'produzido') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">
+        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2" />
+        <div className="max-w-lg mx-auto px-4 py-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-white/50 mb-8">
+            <CookingPot className="w-5 h-5 text-massa-600" />
+            <span className="font-bold text-primary">Mão na Massa</span>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-white/50 p-8">
+            <div className="text-6xl mb-4">✅</div>
+            <h1 className="text-xl font-bold text-primary mb-2">Produção Concluída!</h1>
+            <p className="text-gray-500 text-sm">Seu pedido já está pronto e logo sairá para entrega.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const currentIdx = steps.indexOf(pedido.status)
-  const info = statusInfo[pedido.status] || statusInfo.recebido
+  const info = statusInfo[pedido.status] || statusInfo.pendente
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-amber-50">

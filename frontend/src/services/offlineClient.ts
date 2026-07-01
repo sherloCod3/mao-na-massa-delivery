@@ -76,6 +76,34 @@ export async function obterPedidoDetalheOffline(id: number) {
   return getCachedOrFetch(db.pedidoDetalhe, `pedido_${id}`, () => pedidosApi.obter(id))
 }
 
+/** Avança pedido 1 step e invalida cache */
+export async function avancarPedidoOffline(id: number) {
+  const result = await pedidosApi.avancar(id)
+  await invalidateCache(db.pedidos, db.pedidoDetalhe)
+  return result
+}
+
+/** Pausa pedido com motivo e invalida cache */
+export async function pausarPedidoOffline(id: number, motivo: string) {
+  const result = await pedidosApi.pausar(id, motivo)
+  await invalidateCache(db.pedidos, db.pedidoDetalhe)
+  return result
+}
+
+/** Retoma pedido pausado e invalida cache */
+export async function retomarPedidoOffline(id: number) {
+  const result = await pedidosApi.retomar(id)
+  await invalidateCache(db.pedidos, db.pedidoDetalhe)
+  return result
+}
+
+/** Cancela pedido com motivo e invalida cache */
+export async function cancelarPedidoOffline(id: number, motivo: string) {
+  const result = await pedidosApi.cancelar(id, motivo)
+  await invalidateCache(db.pedidos, db.pedidoDetalhe)
+  return result
+}
+
 // ─── Tracking Público ──────────────────────────────────────────
 
 export async function obterTrackingOffline(token: string) {
