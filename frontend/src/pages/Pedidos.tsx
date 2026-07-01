@@ -1,7 +1,6 @@
 import { lazy, useEffect, useState, useMemo, useCallback, Suspense } from 'react'
 import { Plus, Search, MessageCircle, ShoppingBag, ArrowUpDown, Filter, Clock, CalendarDays, LayoutGrid, List } from 'lucide-react'
-import { listarPedidosOffline } from '../services/offlineClient'
-import { pedidosApi } from '../api/client'
+import { listarPedidosOffline, avancarPedidoOffline, pausarPedidoOffline, retomarPedidoOffline, cancelarPedidoOffline } from '../services/offlineClient'
 import type { Pedido } from '../api/client'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -109,7 +108,7 @@ export default function Pedidos() {
   const handleAvancar = useCallback(async (id: number) => {
     setMutatingId(id)
     try {
-      const updated = await pedidosApi.avancar(id)
+      const updated = await avancarPedidoOffline(id)
       setPedidos(prev => prev.map(p => p.id === id ? updated : p))
       toast('success', `Pedido #${id} avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
     } catch {
@@ -124,7 +123,7 @@ export default function Pedidos() {
     if (!id) return
     setMutatingId(id)
     try {
-      const updated = await pedidosApi.pausar(id, motivo)
+      const updated = await pausarPedidoOffline(id, motivo)
       setPedidos(prev => prev.map(p => p.id === id ? updated : p))
       toast('success', `Pedido #${id} pausado`)
     } catch {
@@ -139,7 +138,7 @@ export default function Pedidos() {
   const handleRetomar = useCallback(async (id: number) => {
     setMutatingId(id)
     try {
-      const updated = await pedidosApi.retomar(id)
+      const updated = await retomarPedidoOffline(id)
       setPedidos(prev => prev.map(p => p.id === id ? updated : p))
       toast('success', `Pedido #${id} retomado`)
     } catch {
@@ -154,7 +153,7 @@ export default function Pedidos() {
     if (!id) return
     setMutatingId(id)
     try {
-      const updated = await pedidosApi.cancelar(id, motivo)
+      const updated = await cancelarPedidoOffline(id, motivo)
       setPedidos(prev => prev.map(p => p.id === id ? updated : p))
       toast('success', `Pedido #${id} cancelado`)
     } catch {

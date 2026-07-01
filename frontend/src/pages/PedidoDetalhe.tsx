@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Copy, MessageCircle, Play, Pause, X, RotateCcw, History } from 'lucide-react'
+import { Copy, MessageCircle, Play, Pause, X, RotateCcw } from 'lucide-react'
 import { pedidosApi } from '../api/client'
-import { obterPedidoDetalheOffline } from '../services/offlineClient'
+import { obterPedidoDetalheOffline, avancarPedidoOffline, pausarPedidoOffline, retomarPedidoOffline, cancelarPedidoOffline } from '../services/offlineClient'
 import { useToast } from '../components/Toast'
 import { gerarLinkWhatsApp, mensagemStatusPedido } from '../utils/whatsapp'
 import type { Pedido, StatusHistoryItem } from '../api/client'
@@ -11,71 +11,7 @@ import {
 } from '../utils/pedido'
 import PageHeader from '../components/PageHeader'
 import ModalMotivo from '../components/ModalMotivo'
-
-function StatusTimeline({ historico }: { historico: StatusHistoryItem[] }) {
-  if (!historico || historico.length === 0) return null
-
-  const emojiMap: Record<string, string> = {
-    pendente: '⏳',
-    producao: '👩‍🍳',
-    produzido: '✅',
-    entrega: '🚚',
-    entregue: '🎉',
-    pausado: '⏸️',
-    cancelado: '❌',
-  }
-
-  const colorMap: Record<string, string> = {
-    pendente: 'border-amber-400',
-    producao: 'border-blue-400',
-    produzido: 'border-emerald-400',
-    entrega: 'border-purple-400',
-    entregue: 'border-green-400',
-    pausado: 'border-orange-400',
-    cancelado: 'border-red-400',
-  }
-
-  return (
-    <div className="bg-white card p-4 sm:p-6 mb-4 sm:mb-6">
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <History className="w-5 h-5 text-gray-500" /> Histórico de Status
-      </h2>
-      <div className="space-y-0">
-        {historico.map((h, idx) => {
-          const isLast = idx === 0
-          const isRetorno = h.status_novo === h.status_anterior && h.status_novo !== 'pausado'
-          return (
-            <div key={h.id} className="flex items-start gap-3">
-              <div className="flex flex-col items-center">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 border-2 ${
-                  colorMap[h.status_novo] || 'border-gray-300'
-                } ${isLast ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
-                  {isLast ? emojiMap[h.status_novo] || '📌' : '○'}
-                </div>
-                {idx < historico.length - 1 && (
-                  <div className="w-0.5 h-8 bg-gray-200" />
-                )}
-              </div>
-              <div className={`pb-4 ${isLast ? '' : 'opacity-70'}`}>
-                <p className="text-sm font-medium text-primary">
-                  {isRetorno ? '↩️ Retomado' : emojiMap[h.status_novo] || '📌'} {getStatusLabel(h.status_novo).replace(/^.{2} /, '')}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {new Date(h.created_at).toLocaleString('pt-BR')}
-                </p>
-                {h.motivo && (
-                  <p className="text-xs text-gray-600 mt-0.5 italic">
-                    &quot;{h.motivo}&quot;
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
+import StatusHistoryTimeline from '../components/StatusHistoryTimeline'
 
 export default function PedidoDetalhe() {
   const { id } = useParams()
@@ -106,7 +42,7 @@ export default function PedidoDetalhe() {
   const handleAvancar = useCallback(async () => {
     if (!pedido) return
     try {
-      const updated = await pedidosApi.avancar(pedido.id)
+      const updated = await avancarPedidoOffline(pedido.id)
       setPedido(updated)
       const h = await pedidosApi.historico(pedido.id)
       setHistorico(h)
@@ -120,7 +56,7 @@ export default function PedidoDetalhe() {
     if (!pedido) return
     setLoadingPausar(true)
     try {
-      const updated = await pedidosApi.pausar(pedido.id, motivo)
+      const updated = await pausarPedidoOffline(pedido.id, motivo)
       setPedido(updated)
       const h = await pedidosApi.historico(pedido.id)
       setHistorico(h)
@@ -136,7 +72,7 @@ export default function PedidoDetalhe() {
   const handleRetomar = useCallback(async () => {
     if (!pedido) return
     try {
-      const updated = await pedidosApi.retomar(pedido.id)
+      const updated = await retomarPedidoOffline(pedido.id)
       setPedido(updated)
       const h = await pedidosApi.historico(pedido.id)
       setHistorico(h)
@@ -150,7 +86,7 @@ export default function PedidoDetalhe() {
     if (!pedido) return
     setLoadingCancelar(true)
     try {
-      const updated = await pedidosApi.cancelar(pedido.id, motivo)
+      const updated = await cancelarPedidoOffline(pedido.id, motivo)
       setPedido(updated)
       const h = await pedidosApi.historico(pedido.id)
       setHistorico(h)
@@ -314,7 +250,7 @@ export default function PedidoDetalhe() {
       </div>
 
       {/* Histórico de Status */}
-      <StatusTimeline historico={historico} />
+      <StatusHistoryTimeline historico={historico} />
 
       {/* Link de tracking */}
       {!isCancelado && (

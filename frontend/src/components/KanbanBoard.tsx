@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KanbanCard from './KanbanCard'
 import type { Pedido } from '../api/client'
@@ -6,10 +6,16 @@ import { getStatusLabel, getStatusBgColor, getAgingInfo, calcMinutesSince } from
 
 interface KanbanBoardProps {
   pedidos: Pedido[]
-  onAvancar: (id: number) => void
+  onAvancar: (id: number) => Promise<void>
   onPausar: (id: number) => void
-  onRetomar: (id: number) => void
+  onRetomar: (id: number) => Promise<void>
   onCancelar: (id: number) => void
+}
+
+/** Tracks which card IDs failed and what action they had */
+interface FailedCard {
+  id: number
+  action: string
 }
 
 const COLUMNS = [
@@ -31,15 +37,19 @@ function Column({
   onRetomar,
   onCancelar,
   onDetalhe,
+  failedIds,
+  onRetryCard,
 }: {
   status: string
   icon: string
   pedidos: Pedido[]
-  onAvancar: (id: number) => void
+  onAvancar: (id: number) => Promise<void>
   onPausar: (id: number) => void
-  onRetomar: (id: number) => void
+  onRetomar: (id: number) => Promise<void>
   onCancelar: (id: number) => void
   onDetalhe: (id: number) => void
+  failedIds: Set<number>
+  onRetryCard?: (id: number) => void
 }) {
   const hasAgingWarning = useMemo(() => {
     return pedidos.some(p => {
@@ -75,11 +85,13 @@ function Column({
             <KanbanCard
               key={p.id}
               pedido={p}
+              failed={failedIds.has(p.id)}
               onAvancar={onAvancar}
               onPausar={onPausar}
               onRetomar={onRetomar}
               onCancelar={onCancelar}
               onDetalhe={onDetalhe}
+              onRetry={onRetryCard}
             />
           ))
         )}
@@ -90,6 +102,33 @@ function Column({
 
 export default function KanbanBoard({ pedidos, onAvancar, onPausar, onRetomar, onCancelar }: KanbanBoardProps) {
   const navigate = useNavigate()
+  const [failedCards, setFailedCards] = useState<FailedCard[]>([])
+
+  /** Wraps an async action with error recovery — tracks failures for retry */
+  function withRecovery(
+    action: (id: number) => Promise<void>,
+    actionName: string,
+  ): (id: number) => Promise<void> {
+    return async (id: number) => {
+      try {
+        // Remove from failed list if previously failed
+        setFailedCards(prev => prev.filter(f => f.id !== id))
+        await action(id)
+      } catch (err) {
+        // Only track network errors for retry — validation errors (400) show toast only
+        const isNetworkError = err instanceof TypeError ||
+          (err instanceof Error && (err.message.includes('fetch') || err.message.includes('network')))
+        if (isNetworkError) {
+          setFailedCards(prev => {
+            const exists = prev.find(f => f.id === id)
+            if (exists) return prev
+            return [...prev, { id, action: actionName }]
+          })
+        }
+        // Validation errors (400+) are not retried — the action handler shows its own toast
+      }
+    }
+  }
 
   const grouped = useMemo(() => {
     const map: Record<string, Pedido[]> = {}
@@ -100,7 +139,6 @@ export default function KanbanBoard({ pedidos, onAvancar, onPausar, onRetomar, o
       if (map[p.status]) {
         map[p.status].push(p)
       } else {
-        // Unknown status — put in first column as fallback
         map[COLUMNS[0].status].push(p)
       }
     }
@@ -109,21 +147,58 @@ export default function KanbanBoard({ pedidos, onAvancar, onPausar, onRetomar, o
 
   const handleDetalhe = (id: number) => navigate(`/admin/pedidos/${id}`)
 
+  // Wrap callbacks with error recovery
+  const safeAvancar = withRecovery(onAvancar, 'avancar')
+  const safePausar = (id: number) => onPausar(id) // pausar opens modal, no network error recovery needed
+  const safeRetomar = withRecovery(onRetomar, 'retomar')
+  const safeCancelar = (id: number) => onCancelar(id) // cancelar opens modal, no network error recovery needed
+
+  const failedIds = new Set(failedCards.map(f => f.id))
+
+  /** Retry a single failed card — re-triggers the original action */
+  const handleRetryCard = (id: number) => {
+    const failed = failedCards.find(f => f.id === id)
+    if (!failed) return
+    setFailedCards(prev => prev.filter(f => f.id !== id))
+    if (failed.action === 'avancar') onAvancar(id)
+    else if (failed.action === 'retomar') onRetomar(id)
+  }
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
-      {COLUMNS.map(col => (
-        <Column
-          key={col.status}
-          status={col.status}
-          icon={col.icon}
-          pedidos={grouped[col.status] || []}
-          onAvancar={onAvancar}
-          onPausar={onPausar}
-          onRetomar={onRetomar}
-          onCancelar={onCancelar}
-          onDetalhe={handleDetalhe}
-        />
-      ))}
+    <div className="relative">
+      {/* Error recovery banner */}
+      {failedCards.length > 0 && (
+        <div className="sticky bottom-0 z-50 bg-red-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm flex items-center gap-3 mx-auto w-fit mb-2">
+          <span>
+            {failedCards.length} operaç{failedCards.length === 1 ? 'ão falhou' : 'ões falharam'}{' '}
+            — clique no card para tentar novamente
+          </span>
+          <button
+            onClick={() => setFailedCards([])}
+            className="text-xs underline hover:no-underline whitespace-nowrap"
+          >
+            Ignorar
+          </button>
+        </div>
+      )}
+
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
+        {COLUMNS.map(col => (
+          <Column
+            key={col.status}
+            status={col.status}
+            icon={col.icon}
+            pedidos={grouped[col.status] || []}
+            onAvancar={safeAvancar}
+            onPausar={safePausar}
+            onRetomar={safeRetomar}
+            onCancelar={safeCancelar}
+            onDetalhe={handleDetalhe}
+            onRetryCard={handleRetryCard}
+            failedIds={failedIds}
+          />
+        ))}
+      </div>
     </div>
   )
 }

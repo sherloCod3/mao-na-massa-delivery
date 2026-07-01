@@ -1,15 +1,18 @@
-import { MessageCircle, Search, Play, Pause, X, RotateCcw, CheckCircle, Truck } from 'lucide-react'
+import { RefreshCw, MessageCircle, Search, Play, Pause, X, RotateCcw, CheckCircle, Truck, AlertTriangle } from 'lucide-react'
 import type { Pedido } from '../api/client'
 import { getAgingInfo, calcMinutesSince } from '../utils/pedido'
 import { gerarLinkWhatsApp, mensagemNovoPedido } from '../utils/whatsapp'
 
 interface KanbanCardProps {
   pedido: Pedido
+  failed?: boolean
   onAvancar?: (id: number) => void
   onPausar?: (id: number) => void
   onRetomar?: (id: number) => void
   onCancelar?: (id: number) => void
   onDetalhe?: (id: number) => void
+  /** Called when user clicks retry on a failed card — parent determines which action to retry */
+  onRetry?: (id: number) => void
 }
 
 const ACTION_BUTTONS: Record<string, Array<{
@@ -45,7 +48,7 @@ const ACTION_BUTTONS: Record<string, Array<{
   ],
 }
 
-export default function KanbanCard({ pedido, onAvancar, onPausar, onRetomar, onCancelar, onDetalhe }: KanbanCardProps) {
+export default function KanbanCard({ pedido, failed = false, onAvancar, onPausar, onRetomar, onCancelar, onDetalhe, onRetry }: KanbanCardProps) {
   const aging = getAgingInfo(calcMinutesSince(pedido.updated_at))
   const actions = ACTION_BUTTONS[pedido.status] || []
 
@@ -60,14 +63,23 @@ export default function KanbanCard({ pedido, onAvancar, onPausar, onRetomar, onC
 
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-200 p-4 transition-all hover:shadow-md ${aging.cardClass}`}
+      className={`bg-white rounded-xl border-2 p-4 transition-all hover:shadow-md ${
+        failed ? 'border-red-400 bg-red-50/50 ring-2 ring-red-200' : (aging.cardClass || 'border-gray-200')
+      }`}
     >
-      {/* Header: ID + aging */}
+      {/* Header: ID + aging + failed badge */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-mono text-gray-400 font-medium">#{pedido.id}</span>
-        {aging.label && (
-          <span className={aging.badgeClass}>{aging.label}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {failed && (
+            <span className="flex items-center gap-1 bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full font-medium">
+              <AlertTriangle className="w-3 h-3" /> Falha
+            </span>
+          )}
+          {aging.label && (
+            <span className={aging.badgeClass}>{aging.label}</span>
+          )}
+        </div>
       </div>
 
       {/* Cliente + total */}
@@ -128,6 +140,16 @@ export default function KanbanCard({ pedido, onAvancar, onPausar, onRetomar, onC
           </button>
         </div>
       </div>
+
+      {/* Failed retry button */}
+      {failed && onRetry && (
+        <button
+          onClick={() => onRetry(pedido.id)}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 bg-red-100 text-red-700 py-2 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Tentar novamente
+        </button>
+      )}
     </div>
   )
 }
