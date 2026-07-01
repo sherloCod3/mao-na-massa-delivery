@@ -154,7 +154,7 @@ class TestPedidos:
         assert resp.status_code == 201
         data = resp.json()
         assert data["cliente_nome"] == "Maria"
-        assert data["status"] == "recebido"
+        assert data["status"] == "pendente"
         assert data["total"] == 20.0
         assert len(data["itens"]) == 1
         assert "token_acesso" in data
@@ -177,12 +177,17 @@ class TestPedidos:
         })
         oid = order.json()["id"]
 
-        # Advance: recebido → producao
+        # Advance: pendente → producao
         resp = await client.put(f"/api/v1/pedidos/{oid}/status", json={"status": "producao"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "producao"
 
-        # Advance: producao → entrega
+        # Advance: producao → produzido
+        resp = await client.put(f"/api/v1/pedidos/{oid}/status", json={"status": "produzido"})
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "produzido"
+
+        # Advance: produzido → entrega
         resp = await client.put(f"/api/v1/pedidos/{oid}/status", json={"status": "entrega"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "entrega"
@@ -208,6 +213,125 @@ class TestPedidos:
         resp = await client.delete(f"/api/v1/pedidos/{oid}")
         assert resp.status_code == 204
 
+    async def test_avancar_flow(self, client: AsyncClient):
+        """Test the avancar endpoint through the full status flow."""
+        prod = await client.post("/api/v1/produtos", json={"nome": "ProdAvancar"})
+        pid = prod.json()["id"]
+        var = await client.post(f"/api/v1/produtos/{pid}/variacoes", json={
+            "nome": "V", "preco_venda": 10.0, "margem_percentual": 30.0,
+        })
+        vid = var.json()["id"]
+        order = await client.post("/api/v1/pedidos", json={
+            "cliente_nome": "Teste Avançar",
+            "itens": [{"variacao_id": vid, "quantidade": 1, "preco_unitario": 10.0, "customizacoes": []}],
+        })
+        oid = order.json()["id"]
+        assert order.json()["status"] == "pendente"
+
+        # pendente → producao
+        resp = await client.post(f"/api/v1/pedidos/{oid}/avancar")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "producao"
+
+        # producao → produzido
+        resp = await client.post(f"/api/v1/pedidos/{oid}/avancar")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "produzido"
+
+        # produzido → entrega
+        resp = await client.post(f"/api/v1/pedidos/{oid}/avancar")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "entrega"
+
+        # entrega → entregue
+        resp = await client.post(f"/api/v1/pedidos/{oid}/avancar")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "entregue"
+
+        # Already at last status — ValidationError returns 400
+        resp = await client.post(f"/api/v1/pedidos/{oid}/avancar")
+        assert resp.status_code == 400
+
+    async def test_pausar_retomar_flow(self, client: AsyncClient):
+        """Test pausar and retomar endpoints."""
+        prod = await client.post("/api/v1/produtos", json={"nome": "ProdPausa"})
+        pid = prod.json()["id"]
+        var = await client.post(f"/api/v1/produtos/{pid}/variacoes", json={
+            "nome": "V", "preco_venda": 8.0, "margem_percentual": 25.0,
+        })
+        vid = var.json()["id"]
+        order = await client.post("/api/v1/pedidos", json={
+            "cliente_nome": "Teste Pausa",
+            "itens": [{"variacao_id": vid, "quantidade": 1, "preco_unitario": 8.0, "customizacoes": []}],
+        })
+        oid = order.json()["id"]
+
+        # Avançar para producao first
+        await client.post(f"/api/v1/pedidos/{oid}/avancar")
+
+        # Pausar com motivo
+        resp = await client.put(f"/api/v1/pedidos/{oid}/pausar", json={"motivo": "Falta insumo"})
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "pausado"
+        assert resp.json()["status_anterior"] == "producao"
+
+        # Retomar
+        resp = await client.put(f"/api/v1/pedidos/{oid}/retomar")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "producao"
+        assert resp.json()["status_anterior"] is None
+
+    async def test_cancelar_com_motivo(self, client: AsyncClient):
+        """Test cancelar endpoint with motivo."""
+        prod = await client.post("/api/v1/produtos", json={"nome": "ProdCancel"})
+        pid = prod.json()["id"]
+        var = await client.post(f"/api/v1/produtos/{pid}/variacoes", json={
+            "nome": "V", "preco_venda": 5.0, "margem_percentual": 20.0,
+        })
+        vid = var.json()["id"]
+        order = await client.post("/api/v1/pedidos", json={
+            "cliente_nome": "Teste Cancel",
+            "itens": [{"variacao_id": vid, "quantidade": 1, "preco_unitario": 5.0, "customizacoes": []}],
+        })
+        oid = order.json()["id"]
+
+        # Cancelar com motivo
+        resp = await client.put(f"/api/v1/pedidos/{oid}/cancelar", json={"motivo": "Cliente desistiu"})
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelado"
+
+        # Verificar que já cancelado retorna erro (ValidationError → 400)
+        resp = await client.put(f"/api/v1/pedidos/{oid}/cancelar", json={"motivo": "Tentar de novo"})
+        assert resp.status_code == 400
+
+    async def test_historico_endpoint(self, client: AsyncClient):
+        """Test historico endpoint returns status history."""
+        prod = await client.post("/api/v1/produtos", json={"nome": "ProdHist"})
+        pid = prod.json()["id"]
+        var = await client.post(f"/api/v1/produtos/{pid}/variacoes", json={
+            "nome": "V", "preco_venda": 6.0, "margem_percentual": 20.0,
+        })
+        vid = var.json()["id"]
+        order = await client.post("/api/v1/pedidos", json={
+            "cliente_nome": "Teste Hist",
+            "itens": [{"variacao_id": vid, "quantidade": 1, "preco_unitario": 6.0, "customizacoes": []}],
+        })
+        oid = order.json()["id"]
+
+        # Avançar one step to generate more history
+        await client.post(f"/api/v1/pedidos/{oid}/avancar")
+
+        # Get history
+        resp = await client.get(f"/api/v1/pedidos/{oid}/historico")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) >= 2  # At least 'pendente' initial + 'producao' avancar
+        assert data[0]["status_novo"]  # Most recent first
+
+        # History for non-existent order
+        resp = await client.get("/api/v1/pedidos/99999/historico")
+        assert resp.status_code == 404
+
 
 class TestTracking:
     """Tests for public tracking endpoint."""
@@ -230,7 +354,7 @@ class TestTracking:
         assert resp.status_code == 200
         data = resp.json()
         assert data["cliente_nome"] == "Cliente Teste"
-        assert data["status"] == "recebido"
+        assert data["status"] == "pendente"
         assert data["total"] == 21.0
 
         # Invalid token

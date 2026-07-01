@@ -51,7 +51,26 @@ class PedidoCreate(BaseModel):
 
 
 class PedidoUpdateStatus(BaseModel):
-    status: str  # recebido, producao, entrega, entregue, cancelado
+    status: str  # pendente, producao, produzido, entrega, entregue, pausado, cancelado
+
+
+class PedidoPausar(BaseModel):
+    motivo: str = Field(min_length=3, description="Motivo obrigatório para pausar")
+
+
+class PedidoCancelar(BaseModel):
+    motivo: str = Field(min_length=3, description="Motivo obrigatório para cancelar")
+
+
+class StatusHistoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    status_anterior: str | None
+    status_novo: str
+    alterado_por: str
+    motivo: str | None
+    created_at: datetime
 
 
 class PedidoResponse(BaseModel):
@@ -62,6 +81,7 @@ class PedidoResponse(BaseModel):
     cliente_whatsapp: str | None = None
     token_acesso: str
     status: str
+    status_anterior: str | None = None
     forma_pagamento: str | None = None
     observacoes: str | None = None
     total: float
@@ -69,6 +89,7 @@ class PedidoResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     itens: list[ItemPedidoResponse] = []
+    status_history: list[StatusHistoryResponse] = []
 
 
 class PedidoTrackingResponse(BaseModel):

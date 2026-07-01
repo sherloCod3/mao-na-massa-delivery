@@ -151,7 +151,7 @@ async def notificar_novo_pedido(
         f"━━━ 🧾 PEDIDO #{pedido_id} ━━━\n\n"
         f"👤 Olá {cliente_nome}!\n"
         f"💰 Total: R$ {total:.2f}\n"
-        f"📥 Status: *Recebido*\n"
+        f"⏳ Status: *Pendente*\n"
     )
     if itens_resumo:
         msg_cliente += f"\n── Itens ──\n{itens_resumo}\n"
@@ -204,10 +204,12 @@ async def notificar_status_pedido(
 ):
     """Notifica administrador sobre mudança de status do pedido."""
     emoji_map = {
-        "recebido": "📥",
+        "pendente": "⏳",
         "producao": "👨‍🍳",
+        "produzido": "✅",
         "entrega": "🚚",
-        "entregue": "✅",
+        "entregue": "🎉",
+        "pausado": "⏸️",
         "cancelado": "❌",
     }
     emoji = emoji_map.get(status_novo, "📌")

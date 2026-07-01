@@ -33,6 +33,13 @@ async def tracking_pedido(
             code="PEDIDO_CANCELADO",
         )
 
+    if pedido.status == "pausado":
+        raise AppError(
+            message="Este pedido está pausado",
+            status_code=410,
+            code="PEDIDO_PAUSADO",
+        )
+
     # Buscar nomes das variações e produtos para cada item
     if pedido.itens:
         variacao_ids = [i.variacao_id for i in pedido.itens]
