@@ -42,6 +42,7 @@ export default function ModalMotivo({
   const [motivo, setMotivo] = useState('')
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setMotivo('')
   }, [open])
 

@@ -30,74 +30,69 @@ export default function PedidoDetalhe() {
     pedidosApi.historico(pid).then(setHistorico).catch(() => {})
   }, [id])
 
+  // All hooks MUST be before the early return (React rules of hooks)
+  const handleAvancar = useCallback(async () => {
+    setPedido(prev => {
+      if (!prev) return prev
+      avancarPedidoOffline(prev.id).then(updated => {
+        setPedido(updated)
+        pedidosApi.historico(prev.id).then(setHistorico).catch(() => {})
+        toast('success', `Pedido avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
+      }).catch(() => toast('error', 'Erro ao avançar pedido'))
+      return prev
+    })
+  }, [toast])
+
+  const handlePausar = useCallback(async (motivo: string) => {
+    setPedido(prev => {
+      if (!prev) return prev
+      setLoadingPausar(true)
+      pausarPedidoOffline(prev.id, motivo).then(updated => {
+        setPedido(updated)
+        pedidosApi.historico(prev.id).then(setHistorico).catch(() => {})
+        toast('success', 'Pedido pausado')
+      }).catch(() => toast('error', 'Erro ao pausar pedido'))
+        .finally(() => { setLoadingPausar(false); setModalPausar(false) })
+      return prev
+    })
+  }, [toast])
+
+  const handleRetomar = useCallback(async () => {
+    setPedido(prev => {
+      if (!prev) return prev
+      retomarPedidoOffline(prev.id).then(updated => {
+        setPedido(updated)
+        pedidosApi.historico(prev.id).then(setHistorico).catch(() => {})
+        toast('success', 'Pedido retomado')
+      }).catch(() => toast('error', 'Erro ao retomar pedido'))
+      return prev
+    })
+  }, [toast])
+
+  const handleCancelar = useCallback(async (motivo: string) => {
+    setPedido(prev => {
+      if (!prev) return prev
+      setLoadingCancelar(true)
+      cancelarPedidoOffline(prev.id, motivo).then(updated => {
+        setPedido(updated)
+        pedidosApi.historico(prev.id).then(setHistorico).catch(() => {})
+        toast('success', 'Pedido cancelado')
+      }).catch(() => toast('error', 'Erro ao cancelar pedido'))
+        .finally(() => { setLoadingCancelar(false); setModalCancelar(false) })
+      return prev
+    })
+  }, [toast])
+
+  // Early return — all hooks are above this line
   if (!pedido) return <div className="text-center py-12 text-gray-400">Carregando...</div>
 
+  // Derived values (after early return, safe as const)
   const currentIdx = STATUS_FLOW.indexOf(pedido.status as typeof STATUS_FLOW[number])
   const isCancelado = pedido.status === 'cancelado'
   const isPausado = pedido.status === 'pausado'
   const isEntregue = pedido.status === 'entregue'
   const isTerminal = isCancelado || isEntregue
   const trackingUrl = `${window.location.origin}/track/${pedido.token_acesso}`
-
-  const handleAvancar = useCallback(async () => {
-    if (!pedido) return
-    try {
-      const updated = await avancarPedidoOffline(pedido.id)
-      setPedido(updated)
-      const h = await pedidosApi.historico(pedido.id)
-      setHistorico(h)
-      toast('success', `Pedido avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
-    } catch {
-      toast('error', 'Erro ao avançar pedido')
-    }
-  }, [pedido, toast])
-
-  const handlePausar = useCallback(async (motivo: string) => {
-    if (!pedido) return
-    setLoadingPausar(true)
-    try {
-      const updated = await pausarPedidoOffline(pedido.id, motivo)
-      setPedido(updated)
-      const h = await pedidosApi.historico(pedido.id)
-      setHistorico(h)
-      toast('success', 'Pedido pausado')
-    } catch {
-      toast('error', 'Erro ao pausar pedido')
-    } finally {
-      setLoadingPausar(false)
-      setModalPausar(false)
-    }
-  }, [pedido, toast])
-
-  const handleRetomar = useCallback(async () => {
-    if (!pedido) return
-    try {
-      const updated = await retomarPedidoOffline(pedido.id)
-      setPedido(updated)
-      const h = await pedidosApi.historico(pedido.id)
-      setHistorico(h)
-      toast('success', 'Pedido retomado')
-    } catch {
-      toast('error', 'Erro ao retomar pedido')
-    }
-  }, [pedido, toast])
-
-  const handleCancelar = useCallback(async (motivo: string) => {
-    if (!pedido) return
-    setLoadingCancelar(true)
-    try {
-      const updated = await cancelarPedidoOffline(pedido.id, motivo)
-      setPedido(updated)
-      const h = await pedidosApi.historico(pedido.id)
-      setHistorico(h)
-      toast('success', 'Pedido cancelado')
-    } catch {
-      toast('error', 'Erro ao cancelar pedido')
-    } finally {
-      setLoadingCancelar(false)
-      setModalCancelar(false)
-    }
-  }, [pedido, toast])
 
   const sendWhatsAppStatus = () => {
     const msg = mensagemStatusPedido(pedido.cliente_nome, pedido.id, pedido.status, pedido.total, trackingUrl)

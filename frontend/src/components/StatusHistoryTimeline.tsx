@@ -1,19 +1,9 @@
 import { History } from 'lucide-react'
 import type { StatusHistoryItem } from '../api/client'
-import { getStatusLabel } from '../utils/pedido'
+import { getStatusLabel, getStatusEmoji } from '../utils/pedido'
 
 interface StatusHistoryTimelineProps {
   historico: StatusHistoryItem[]
-}
-
-const EMOJI_MAP: Record<string, string> = {
-  pendente: '⏳',
-  producao: '👩‍🍳',
-  produzido: '✅',
-  entrega: '🚚',
-  entregue: '🎉',
-  pausado: '⏸️',
-  cancelado: '❌',
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -37,14 +27,14 @@ export default function StatusHistoryTimeline({ historico }: StatusHistoryTimeli
       <div className="space-y-0">
         {historico.map((h, idx) => {
           const isLast = idx === 0
-          const isRetorno = h.status_novo === h.status_anterior && h.status_novo !== 'pausado'
+          const isRetorno = h.status_anterior === 'pausado' && h.status_novo !== 'cancelado'
           return (
             <div key={h.id} className="flex items-start gap-3">
               <div className="flex flex-col items-center">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 border-2 ${
                   COLOR_MAP[h.status_novo] || 'border-gray-300'
                 } ${isLast ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
-                  {isLast ? EMOJI_MAP[h.status_novo] || '📌' : '○'}
+                  {isLast ? getStatusEmoji(h.status_novo) : '○'}
                 </div>
                 {idx < historico.length - 1 && (
                   <div className="w-0.5 h-8 bg-gray-200" />
@@ -52,7 +42,7 @@ export default function StatusHistoryTimeline({ historico }: StatusHistoryTimeli
               </div>
               <div className={`pb-4 ${isLast ? '' : 'opacity-70'}`}>
                 <p className="text-sm font-medium text-primary">
-                  {isRetorno ? '↩️ Retomado' : EMOJI_MAP[h.status_novo] || '📌'} {getStatusLabel(h.status_novo).replace(/^.{2} /, '')}
+                  {isRetorno ? '↩️ Retomado ' : ''}{getStatusLabel(h.status_novo)}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {new Date(h.created_at).toLocaleString('pt-BR')}
