@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KanbanCard from './KanbanCard'
 import type { Pedido } from '../api/client'
-import { getStatusLabel, getStatusBgColor, getAgingInfo, calcMinutesSince } from '../utils/pedido'
+import { getStatusLabelText, getStatusBgColor, getAgingInfo, calcMinutesSince } from '../utils/pedido'
 
 interface KanbanBoardProps {
   pedidos: Pedido[]
@@ -64,7 +64,7 @@ function Column({
       <div className="flex items-center justify-between px-4 py-3 border-b border-inherit sticky top-0 bg-inherit z-10">
         <div className="flex items-center gap-2">
           <span className="text-lg">{icon}</span>
-          <h3 className="text-sm font-semibold text-primary">{getStatusLabel(status).replace(/^.{2} /, '')}</h3>
+          <h3 className="text-sm font-semibold text-primary">{getStatusLabelText(status)}</h3>
           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200/60 text-gray-600 font-medium">
             {pedidos.length}
           </span>

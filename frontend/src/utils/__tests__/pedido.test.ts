@@ -4,7 +4,7 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
   STATUS_COLORS_SIMPLE,
-  getStatusLabel,
+  getStatusLabel, getStatusLabelText,
   getStatusColor,
   getStatusColorSimple,
   getStatusEmoji,
@@ -100,6 +100,34 @@ describe('utils/pedido', () => {
 
     it('returns fallback for unknown status', () => {
       expect(getStatusBgColor('xyz')).toBe('bg-gray-50 border-gray-200')
+    })
+  })
+
+  describe('getStatusLabelText()', () => {
+    it('strips emoji prefix from all known statuses', () => {
+      for (const status of Object.keys(STATUS_LABELS)) {
+        const text = getStatusLabelText(status)
+        // Should not start with an emoji character
+        expect(text).not.toMatch(/^[\u{1F300}-\u{1FAFF}]|^[\u2600-\u27BF}]|^[\u{2702}-\u{27B0}]|[\uFE00-\uFE0F}]/u)
+        // Should contain the label text without emoji
+        expect(text.length).toBeGreaterThan(0)
+      }
+    })
+
+    it('returns label text without emoji for pendente', () => {
+      expect(getStatusLabelText('pendente')).toBe('Pendente')
+    })
+
+    it('returns label text without emoji for producao', () => {
+      expect(getStatusLabelText('producao')).toBe('Em Produção')
+    })
+
+    it('returns label text without emoji for entregue', () => {
+      expect(getStatusLabelText('entregue')).toBe('Entregue')
+    })
+
+    it('returns raw status for unknown status', () => {
+      expect(getStatusLabelText('unknown')).toBe('unknown')
     })
   })
 

@@ -1,16 +1,62 @@
-# Evolution API — Gateway WhatsApp
-# ================================
-# Uso: docker compose up -d
-# Acessar: http://localhost:8080
-# Docs: https://doc.evolution-api.com
+# Mão na Massa — Ambiente de Desenvolvimento
+# ===========================================
+# Uso:
+#   docker compose up -d          # Sobe todos os serviços
+#   docker compose up -d backend  # Sobe apenas backend + banco
+#   docker compose down           # Derruba tudo
 #
-# 1. Criar instância: POST http://localhost:8080/instance/create
-# 2. Escanear QR Code com o WhatsApp
-# 3. Enviar mensagem: POST http://localhost:8080/message/send
+# Serviços:
+#   - backend:     FastAPI em http://localhost:8000
+#   - frontend:    Vite dev server em http://localhost:5173
+#   - evolution:   WhatsApp Gateway em http://localhost:8080
 #
-# Nosso backend FastAPI (notificador.py) chama essa API.
+# E2E Tests:
+#   1. docker compose up -d backend evolution-api
+#   2. cd backend && uv run python scripts/seed_e2e.py
+#   3. cd frontend && ADMIN_TOKEN=e2e-admin-2026 pnpm exec playwright test
 
 services:
+  # ─── Backend — FastAPI + SQLite ────────────────────────
+  # ─── Backend — FastAPI + SQLite ────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.e2e
+    container_name: mao-na-massa-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # SQLite local (persistente via volume)
+      DATABASE_URL: "sqlite+aiosqlite:///data/mao-na-massa.db"
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
+      ADMIN_TOKEN: "e2e-admin-2026"
+      ENVIRONMENT: "development"
+      ALLOWED_HOSTS: "*"
+      APP_URL: "http://localhost:5173"
+    # Volume mount hides .venv from Dockerfile, so re-sync on start
+    command: sh -c "uv sync && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - backend_data:/data
+      - ./backend:/app  # Hot-reload em desenvolvimento
+
+  # ─── Frontend — Vite dev server ───────────────────────
+  frontend:
+    image: node:22-alpine
+    container_name: mao-na-massa-frontend
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm dev --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "/api/v1"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  # ─── Evolution API — Gateway WhatsApp ─────────────────
   evolution-api:
     image: atendai/evolution-api:latest
     container_name: evolution-api
@@ -18,36 +64,21 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # ─── Database (SQLite local) ──────────────────────
       DATABASE_ENABLED: "true"
       DATABASE_CONNECTION_URI: "file:///evolution/database.sqlite"
       DATABASE_SAVE_DATA_INSTANCE: "true"
       DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
-
-      # ─── Autenticação ─────────────────────────────────
       AUTHENTICATION_TYPE: "apikey"
       AUTHENTICATION_API_KEY: "mao-na-massa-key"
-
-      # ─── Server ───────────────────────────────────────
       SERVER_PORT: 8080
-
-      # ─── Logs ─────────────────────────────────────────
       LOG_LEVEL: "ERROR"
       LOG_SAVE: "true"
       LOG_FILE: "/evolution/logs.txt"
-
-      # ─── Webhook (opcional - desligado por padrão) ────
-      # Descomente para receber notificações de mensagens:
-      # WEBHOOK_ENABLED: "true"
-      # WEBHOOK_URL: "http://seu-backend:8000/api/v1/whatsapp-webhook"
-
-      # ─── Redis (opcional - desligado) ─────────────────
       REDIS_ENABLED: "false"
-
-      # ─── Cache de QR Code ─────────────────────────────
       QRCODE_LIMIT: "30"
     volumes:
       - evolution_data:/evolution
 
 volumes:
+  backend_data:
   evolution_data:

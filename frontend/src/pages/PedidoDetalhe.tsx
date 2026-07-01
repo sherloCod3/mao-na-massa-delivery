@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast'
 import { gerarLinkWhatsApp, mensagemStatusPedido } from '../utils/whatsapp'
 import type { Pedido, StatusHistoryItem } from '../api/client'
 import {
-  STATUS_FLOW, getStatusColor, getStatusLabel, getStatusEmoji,
+  STATUS_FLOW, getStatusColor, getStatusLabel, getStatusLabelText, getStatusEmoji,
 } from '../utils/pedido'
 import PageHeader from '../components/PageHeader'
 import ModalMotivo from '../components/ModalMotivo'
@@ -44,7 +44,7 @@ export default function PedidoDetalhe() {
       setPedido(updated)
       const h = await pedidosApi.historico(current.id)
       setHistorico(h)
-      toast('success', `Pedido avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
+      toast('success', `Pedido avançou para "${getStatusLabelText(updated.status)}"`)
     } catch {
       toast('error', 'Erro ao avançar pedido')
     }
@@ -158,7 +158,7 @@ export default function PedidoDetalhe() {
           </div>
           <div className="flex justify-between mt-1 text-[10px] sm:text-xs text-gray-500">
             {STATUS_FLOW.map(s => (
-              <span key={s}>{getStatusLabel(s).replace(/^.{2} /, '')}</span>
+              <span key={s}>{getStatusLabelText(s)}</span>
             ))}
           </div>
 
@@ -167,7 +167,7 @@ export default function PedidoDetalhe() {
             {!isPausado && currentIdx < STATUS_FLOW.length - 1 && (
               <button onClick={handleAvancar}
                 className="flex-1 bg-massa-600 text-white py-2.5 rounded-lg hover:bg-massa-700 text-sm min-h-[44px] font-medium flex items-center justify-center gap-2">
-                <Play className="w-4 h-4" /> Avançar para &quot;{getStatusLabel(STATUS_FLOW[currentIdx + 1]).replace(/^.{2} /, '')}&quot;
+                <Play className="w-4 h-4" /> Avançar para &quot;{getStatusLabelText(STATUS_FLOW[currentIdx + 1])}&quot;
               </button>
             )}
             {!isPausado && !isTerminal && (
@@ -196,7 +196,7 @@ export default function PedidoDetalhe() {
       {(isCancelado || isEntregue) && (
         <div className={`card p-6 mb-4 sm:mb-6 text-center ${isCancelado ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
           <div className="text-4xl mb-2">{getStatusEmoji(pedido.status)}</div>
-          <h2 className="text-lg font-bold text-primary">{getStatusLabel(pedido.status).replace(/^.{2} /, '')}</h2>
+          <h2 className="text-lg font-bold text-primary">{getStatusLabelText(pedido.status)}</h2>
         </div>
       )}
 

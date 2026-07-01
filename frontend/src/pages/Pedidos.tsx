@@ -5,7 +5,7 @@ import type { Pedido } from '../api/client'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { gerarLinkWhatsApp, mensagemNovoPedido } from '../utils/whatsapp'
-import { getStatusLabel, getStatusColorSimple, getAgingInfo, calcMinutesSince } from '../utils/pedido'
+import { getStatusLabel, getStatusLabelText, getStatusColorSimple, getAgingInfo, calcMinutesSince } from '../utils/pedido'
 import PageHeader from '../components/PageHeader'
 import { useToast } from '../components/Toast'
 import ModalMotivo from '../components/ModalMotivo'
@@ -110,7 +110,7 @@ export default function Pedidos() {
     try {
       const updated = await avancarPedidoOffline(id)
       setPedidos(prev => prev.map(p => p.id === id ? updated : p))
-      toast('success', `Pedido #${id} avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
+      toast('success', `Pedido #${id} avançou para "${getStatusLabelText(updated.status)}"`)
     } catch {
       toast('error', `Erro ao avançar pedido #${id}`)
     } finally {

@@ -47,6 +47,21 @@ export function getStatusLabel(status: string): string {
   return STATUS_LABELS[status] || status
 }
 
+/**
+ * Returns the label text WITHOUT the emoji prefix.
+ * Uses getStatusEmoji() to determine exactly what to strip,
+ * avoiding fragile regex like `.replace(/^.{2} /, '')`.
+ */
+export function getStatusLabelText(status: string): string {
+  const emoji = getStatusEmoji(status)
+  const label = getStatusLabel(status)
+  // Strip the emoji prefix + trailing space if present
+  if (label.startsWith(emoji) && label.length > emoji.length) {
+    return label.slice(emoji.length + 1) // +1 for the space after emoji
+  }
+  return label
+}
+
 export function getStatusColor(status: string): string {
   return STATUS_COLORS[status] || 'bg-gray-100 text-gray-800'
 }
