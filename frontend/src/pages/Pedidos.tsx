@@ -1,12 +1,18 @@
-import { useEffect, useState, useMemo } from 'react'
-import { Plus, Search, MessageCircle, ShoppingBag, ArrowUpDown, Filter, Clock, CalendarDays } from 'lucide-react'
+import { lazy, useEffect, useState, useMemo, useCallback, Suspense } from 'react'
+import { Plus, Search, MessageCircle, ShoppingBag, ArrowUpDown, Filter, Clock, CalendarDays, LayoutGrid, List } from 'lucide-react'
 import { listarPedidosOffline } from '../services/offlineClient'
+import { pedidosApi } from '../api/client'
 import type { Pedido } from '../api/client'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { gerarLinkWhatsApp, mensagemNovoPedido } from '../utils/whatsapp'
-import { getStatusLabel, getStatusColorSimple } from '../utils/pedido'
+import { getStatusLabel, getStatusColorSimple, getAgingInfo, calcMinutesSince } from '../utils/pedido'
 import PageHeader from '../components/PageHeader'
+import { useToast } from '../components/Toast'
+import ModalMotivo from '../components/ModalMotivo'
+import { Loading } from '../components/AsyncWrapper'
+
+const KanbanBoard = lazy(() => import('../components/KanbanBoard'))
 
 type SortField = 'data' | 'total' | 'status'
 type SortDir = 'asc' | 'desc'
@@ -22,7 +28,25 @@ export default function Pedidos() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const viewMode = searchParams.get('view') || 'lista'
+
+  // Modal state — separate variables to avoid conditional hook warnings
+  const [modalPausarOpen, setModalPausarOpen] = useState(false)
+  const [modalPausarId, setModalPausarId] = useState(0)
+  const [modalCancelarOpen, setModalCancelarOpen] = useState(false)
+  const [modalCancelarId, setModalCancelarId] = useState(0)
+  const [mutatingId, setMutatingId] = useState<number | null>(null)
+
+  const setView = useCallback((view: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (view === 'kanban') params.set('view', 'kanban')
+    else params.delete('view')
+    setSearchParams(params, { replace: true })
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     listarPedidosOffline()
@@ -72,23 +96,146 @@ export default function Pedidos() {
     return result
   }, [pedidos, search, statusFilter, sortField, sortDir])
 
+  // Status counts for header
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const p of pedidos) {
+      counts[p.status] = (counts[p.status] || 0) + 1
+    }
+    return counts
+  }, [pedidos])
+
+  // Kanban actions
+  const handleAvancar = useCallback(async (id: number) => {
+    setMutatingId(id)
+    try {
+      const updated = await pedidosApi.avancar(id)
+      setPedidos(prev => prev.map(p => p.id === id ? updated : p))
+      toast('success', `Pedido #${id} avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
+    } catch {
+      toast('error', `Erro ao avançar pedido #${id}`)
+    } finally {
+      setMutatingId(null)
+    }
+  }, [toast])
+
+  const handlePausarConfirm = useCallback(async (motivo: string) => {
+    const id = modalPausarId
+    if (!id) return
+    setMutatingId(id)
+    try {
+      const updated = await pedidosApi.pausar(id, motivo)
+      setPedidos(prev => prev.map(p => p.id === id ? updated : p))
+      toast('success', `Pedido #${id} pausado`)
+    } catch {
+      toast('error', `Erro ao pausar pedido #${id}`)
+    } finally {
+      setMutatingId(null)
+      setModalPausarOpen(false)
+      setModalPausarId(0)
+    }
+  }, [modalPausarId, toast])
+
+  const handleRetomar = useCallback(async (id: number) => {
+    setMutatingId(id)
+    try {
+      const updated = await pedidosApi.retomar(id)
+      setPedidos(prev => prev.map(p => p.id === id ? updated : p))
+      toast('success', `Pedido #${id} retomado`)
+    } catch {
+      toast('error', `Erro ao retomar pedido #${id}`)
+    } finally {
+      setMutatingId(null)
+    }
+  }, [toast])
+
+  const handleCancelarConfirm = useCallback(async (motivo: string) => {
+    const id = modalCancelarId
+    if (!id) return
+    setMutatingId(id)
+    try {
+      const updated = await pedidosApi.cancelar(id, motivo)
+      setPedidos(prev => prev.map(p => p.id === id ? updated : p))
+      toast('success', `Pedido #${id} cancelado`)
+    } catch {
+      toast('error', `Erro ao cancelar pedido #${id}`)
+    } finally {
+      setMutatingId(null)
+      setModalCancelarOpen(false)
+      setModalCancelarId(0)
+    }
+  }, [modalCancelarId, toast])
+
   function renderSortIcon(field: SortField) {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-30" />
     return <ArrowUpDown className={`w-3 h-3 inline ml-1 ${sortDir === 'asc' ? 'rotate-180' : ''}`} />
   }
+
+  // Header summary text
+  const headerSummary = useMemo(() => {
+    const parts: string[] = []
+    if (statusCounts['pendente']) parts.push(`⏳ ${statusCounts['pendente']}`)
+    if (statusCounts['producao']) parts.push(`👩‍🍳 ${statusCounts['producao']}`)
+    if (statusCounts['produzido']) parts.push(`✅ ${statusCounts['produzido']}`)
+    if (statusCounts['entrega']) parts.push(`🚚 ${statusCounts['entrega']}`)
+    return parts.length ? parts.join(' · ') : undefined
+  }, [statusCounts])
 
   return (
     <div>
       <PageHeader
         title="Pedidos"
         icon={<ShoppingBag className="w-6 h-6" />}
+        subtitle={headerSummary}
         action={
-          <button onClick={() => navigate('/admin/pedidos/novo')}
-            className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700 transition-colors min-w-[44px] min-h-[44px] justify-center">
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Novo Pedido</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setView('lista')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
+                  viewMode === 'lista' ? 'bg-white text-massa-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" /> Lista
+              </button>
+              <button
+                onClick={() => setView('kanban')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
+                  viewMode === 'kanban' ? 'bg-white text-massa-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> Kanban
+              </button>
+            </div>
+            <button onClick={() => navigate('/admin/pedidos/novo')}
+              className="flex items-center gap-2 bg-massa-600 text-white px-4 py-2 rounded-lg hover:bg-massa-700 transition-colors min-w-[44px] min-h-[44px] justify-center"
+            >
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Novo Pedido</span>
+            </button>
+          </div>
         }
       />
+
+      {/* Mobile view toggle */}
+      <div className="sm:hidden flex bg-gray-100 rounded-lg p-0.5 mb-4">
+        <button
+          onClick={() => setView('lista')}
+          className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+            viewMode === 'lista' ? 'bg-white text-massa-600 shadow-sm' : 'text-gray-500'
+          }`}
+        >
+          <List className="w-4 h-4 inline mr-1" /> Lista
+        </button>
+        <button
+          onClick={() => setView('kanban')}
+          className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+            viewMode === 'kanban' ? 'bg-white text-massa-600 shadow-sm' : 'text-gray-500'
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4 inline mr-1" /> Kanban
+        </button>
+      </div>
 
       {/* Filtros e busca */}
       <div className="bg-white card p-4 mb-4 space-y-3">
@@ -116,10 +263,12 @@ export default function Pedidos() {
           <div className="flex gap-1 flex-wrap">
             {[
               { value: 'todos', label: 'Todos' },
-              { value: 'recebido', label: 'Recebidos' },
+              { value: 'pendente', label: 'Pendentes' },
               { value: 'producao', label: 'Em Produção' },
+              { value: 'produzido', label: 'Produzidos' },
               { value: 'entrega', label: 'Em Entrega' },
               { value: 'entregue', label: 'Entregues' },
+              { value: 'pausado', label: 'Pausados' },
               { value: 'cancelado', label: 'Cancelados' },
             ].map(s => (
               <button key={s.value} onClick={() => setStatusFilter(s.value as StatusFilter)}
@@ -158,8 +307,21 @@ export default function Pedidos() {
         </div>
       )}
 
-      {/* Desktop: tabela */}
-      {!loading && !error && (
+      {/* KANBAN VIEW */}
+      {!loading && !error && viewMode === 'kanban' && (
+        <Suspense fallback={<Loading height="h-64" message="Carregando Kanban..." />}>
+          <KanbanBoard
+            pedidos={filtered}
+            onAvancar={handleAvancar}
+            onPausar={(id) => { setModalPausarOpen(true); setModalPausarId(id) }}
+            onRetomar={handleRetomar}
+            onCancelar={(id) => { setModalCancelarOpen(true); setModalCancelarId(id) }}
+          />
+        </Suspense>
+      )}
+
+      {/* LISTA VIEW: Desktop table */}
+      {!loading && !error && viewMode === 'lista' && (
         <div className="hidden sm:block bg-white card overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
@@ -188,7 +350,7 @@ export default function Pedidos() {
                     {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       {p.cliente_whatsapp && (
                         <button onClick={() => {
                           const msg = mensagemNovoPedido(p.cliente_nome, p.id, p.total)
@@ -216,8 +378,8 @@ export default function Pedidos() {
         </div>
       )}
 
-      {/* Mobile: card list */}
-      {!loading && !error && (
+      {/* LISTA VIEW: Mobile cards */}
+      {!loading && !error && viewMode === 'lista' && (
         <div className="sm:hidden space-y-3">
           {filtered.map(p => (
             <div key={p.id} onClick={() => navigate(`/admin/pedidos/${p.id}`)}
@@ -233,9 +395,15 @@ export default function Pedidos() {
                 <span className="font-bold text-massa-600 tabular">R$ {p.total.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                <span className="text-xs text-gray-400">
-                  {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-400">
+                    {new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {(() => {
+                    const aging = getAgingInfo(calcMinutesSince(p.created_at))
+                    return aging.label ? <span className={aging.badgeClass}>{aging.label}</span> : null
+                  })()}
+                </div>
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                   {p.cliente_whatsapp && (
                     <button onClick={() => {
@@ -258,13 +426,37 @@ export default function Pedidos() {
         </div>
       )}
 
-      {/* Contagem */}
+      {/* Count */}
       {!loading && !error && pedidos.length > 0 && (
         <div className="text-xs text-gray-400 text-center mt-4">
           Exibindo {filtered.length} de {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''}
-          {search && ` (filtro: \"${search}\")`}
+          {search && ` (filtro: "${search}")`}
         </div>
       )}
+
+      {/* Modals */}
+      <ModalMotivo
+        open={modalPausarOpen}
+        title="Pausar Pedido"
+        fieldLabel="Motivo da pausa"
+        placeholder="Ex: Aguardando cliente confirmar, falta insumo..."
+        confirmLabel="Pausar"
+        icon="pause"
+        onConfirm={handlePausarConfirm}
+        onCancel={() => { setModalPausarOpen(false); setModalPausarId(0) }}
+        loading={mutatingId === modalPausarId}
+      />
+      <ModalMotivo
+        open={modalCancelarOpen}
+        title="Cancelar Pedido"
+        fieldLabel="Motivo do cancelamento"
+        placeholder="Ex: Cliente desistiu, erro no pedido..."
+        confirmLabel="Cancelar"
+        icon="cancel"
+        onConfirm={handleCancelarConfirm}
+        onCancel={() => { setModalCancelarOpen(false); setModalCancelarId(0) }}
+        loading={mutatingId === modalCancelarId}
+      />
     </div>
   )
 }

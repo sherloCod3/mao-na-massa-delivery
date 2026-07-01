@@ -1,45 +1,167 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Copy, MessageCircle } from 'lucide-react'
+import { Copy, MessageCircle, Play, Pause, X, RotateCcw, History } from 'lucide-react'
 import { pedidosApi } from '../api/client'
 import { obterPedidoDetalheOffline } from '../services/offlineClient'
-import { MutationQueuedError } from '../services/mutationQueue'
 import { useToast } from '../components/Toast'
 import { gerarLinkWhatsApp, mensagemStatusPedido } from '../utils/whatsapp'
-import type { Pedido } from '../api/client'
+import type { Pedido, StatusHistoryItem } from '../api/client'
 import {
   STATUS_FLOW, getStatusColor, getStatusLabel, getStatusEmoji,
 } from '../utils/pedido'
 import PageHeader from '../components/PageHeader'
+import ModalMotivo from '../components/ModalMotivo'
+
+function StatusTimeline({ historico }: { historico: StatusHistoryItem[] }) {
+  if (!historico || historico.length === 0) return null
+
+  const emojiMap: Record<string, string> = {
+    pendente: '⏳',
+    producao: '👩‍🍳',
+    produzido: '✅',
+    entrega: '🚚',
+    entregue: '🎉',
+    pausado: '⏸️',
+    cancelado: '❌',
+  }
+
+  const colorMap: Record<string, string> = {
+    pendente: 'border-amber-400',
+    producao: 'border-blue-400',
+    produzido: 'border-emerald-400',
+    entrega: 'border-purple-400',
+    entregue: 'border-green-400',
+    pausado: 'border-orange-400',
+    cancelado: 'border-red-400',
+  }
+
+  return (
+    <div className="bg-white card p-4 sm:p-6 mb-4 sm:mb-6">
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <History className="w-5 h-5 text-gray-500" /> Histórico de Status
+      </h2>
+      <div className="space-y-0">
+        {historico.map((h, idx) => {
+          const isLast = idx === 0
+          const isRetorno = h.status_novo === h.status_anterior && h.status_novo !== 'pausado'
+          return (
+            <div key={h.id} className="flex items-start gap-3">
+              <div className="flex flex-col items-center">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 border-2 ${
+                  colorMap[h.status_novo] || 'border-gray-300'
+                } ${isLast ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
+                  {isLast ? emojiMap[h.status_novo] || '📌' : '○'}
+                </div>
+                {idx < historico.length - 1 && (
+                  <div className="w-0.5 h-8 bg-gray-200" />
+                )}
+              </div>
+              <div className={`pb-4 ${isLast ? '' : 'opacity-70'}`}>
+                <p className="text-sm font-medium text-primary">
+                  {isRetorno ? '↩️ Retomado' : emojiMap[h.status_novo] || '📌'} {getStatusLabel(h.status_novo).replace(/^.{2} /, '')}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {new Date(h.created_at).toLocaleString('pt-BR')}
+                </p>
+                {h.motivo && (
+                  <p className="text-xs text-gray-600 mt-0.5 italic">
+                    &quot;{h.motivo}&quot;
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 export default function PedidoDetalhe() {
   const { id } = useParams()
   const [pedido, setPedido] = useState<Pedido | null>(null)
+  const [historico, setHistorico] = useState<StatusHistoryItem[]>([])
+  const [modalPausar, setModalPausar] = useState(false)
+  const [modalCancelar, setModalCancelar] = useState(false)
+  const [loadingPausar, setLoadingPausar] = useState(false)
+  const [loadingCancelar, setLoadingCancelar] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    if (id) obterPedidoDetalheOffline(parseInt(id)).then(setPedido)
+    if (!id) return
+    const pid = parseInt(id)
+    obterPedidoDetalheOffline(pid).then(setPedido)
+    pedidosApi.historico(pid).then(setHistorico).catch(() => {})
   }, [id])
 
   if (!pedido) return <div className="text-center py-12 text-gray-400">Carregando...</div>
 
   const currentIdx = STATUS_FLOW.indexOf(pedido.status as typeof STATUS_FLOW[number])
   const isCancelado = pedido.status === 'cancelado'
+  const isPausado = pedido.status === 'pausado'
+  const isEntregue = pedido.status === 'entregue'
+  const isTerminal = isCancelado || isEntregue
   const trackingUrl = `${window.location.origin}/track/${pedido.token_acesso}`
 
-  const advanceStatus = async () => {
-    const nextIdx = currentIdx + 1
-    if (nextIdx < STATUS_FLOW.length) {
-      try {
-        const updated = await pedidosApi.atualizarStatus(pedido.id, STATUS_FLOW[nextIdx])
-        setPedido(updated)
-        toast('success', `Status atualizado para "${getStatusLabel(STATUS_FLOW[nextIdx]).replace(/^.{2} /, '')}"`)
-      } catch (err) {
-        const msg = err instanceof MutationQueuedError ? err.message : 'Erro ao atualizar status'
-        toast(err instanceof MutationQueuedError ? 'info' : 'error', msg)
-      }
+  const handleAvancar = useCallback(async () => {
+    if (!pedido) return
+    try {
+      const updated = await pedidosApi.avancar(pedido.id)
+      setPedido(updated)
+      const h = await pedidosApi.historico(pedido.id)
+      setHistorico(h)
+      toast('success', `Pedido avançou para "${getStatusLabel(updated.status).replace(/^.{2} /, '')}"`)
+    } catch {
+      toast('error', 'Erro ao avançar pedido')
     }
-  }
+  }, [pedido, toast])
+
+  const handlePausar = useCallback(async (motivo: string) => {
+    if (!pedido) return
+    setLoadingPausar(true)
+    try {
+      const updated = await pedidosApi.pausar(pedido.id, motivo)
+      setPedido(updated)
+      const h = await pedidosApi.historico(pedido.id)
+      setHistorico(h)
+      toast('success', 'Pedido pausado')
+    } catch {
+      toast('error', 'Erro ao pausar pedido')
+    } finally {
+      setLoadingPausar(false)
+      setModalPausar(false)
+    }
+  }, [pedido, toast])
+
+  const handleRetomar = useCallback(async () => {
+    if (!pedido) return
+    try {
+      const updated = await pedidosApi.retomar(pedido.id)
+      setPedido(updated)
+      const h = await pedidosApi.historico(pedido.id)
+      setHistorico(h)
+      toast('success', 'Pedido retomado')
+    } catch {
+      toast('error', 'Erro ao retomar pedido')
+    }
+  }, [pedido, toast])
+
+  const handleCancelar = useCallback(async (motivo: string) => {
+    if (!pedido) return
+    setLoadingCancelar(true)
+    try {
+      const updated = await pedidosApi.cancelar(pedido.id, motivo)
+      setPedido(updated)
+      const h = await pedidosApi.historico(pedido.id)
+      setHistorico(h)
+      toast('success', 'Pedido cancelado')
+    } catch {
+      toast('error', 'Erro ao cancelar pedido')
+    } finally {
+      setLoadingCancelar(false)
+      setModalCancelar(false)
+    }
+  }, [pedido, toast])
 
   const sendWhatsAppStatus = () => {
     const msg = mensagemStatusPedido(pedido.cliente_nome, pedido.id, pedido.status, pedido.total, trackingUrl)
@@ -69,8 +191,8 @@ export default function PedidoDetalhe() {
         }
       />
 
-      {/* Progresso do status */}
-      {!isCancelado && (
+      {/* Progresso do status (apenas para fluxo canônico) */}
+      {currentIdx >= 0 && !isTerminal && (
         <div className="bg-white card p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
             {STATUS_FLOW.map((s, idx) => (
@@ -91,12 +213,42 @@ export default function PedidoDetalhe() {
               <span key={s}>{getStatusLabel(s).replace(/^.{2} /, '')}</span>
             ))}
           </div>
-          {currentIdx < STATUS_FLOW.length - 1 && (
-            <button onClick={advanceStatus}
-              className="mt-4 w-full bg-massa-600 text-white py-2.5 rounded-lg hover:bg-massa-700 text-sm min-h-[44px] font-medium">
-              Avançar para "{getStatusLabel(STATUS_FLOW[currentIdx + 1]).replace(/^.{2} /, '')}"
-            </button>
-          )}
+
+          {/* Action buttons row */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {!isPausado && currentIdx < STATUS_FLOW.length - 1 && (
+              <button onClick={handleAvancar}
+                className="flex-1 bg-massa-600 text-white py-2.5 rounded-lg hover:bg-massa-700 text-sm min-h-[44px] font-medium flex items-center justify-center gap-2">
+                <Play className="w-4 h-4" /> Avançar para &quot;{getStatusLabel(STATUS_FLOW[currentIdx + 1]).replace(/^.{2} /, '')}&quot;
+              </button>
+            )}
+            {!isPausado && !isTerminal && (
+              <button onClick={() => setModalPausar(true)}
+                className="px-4 py-2.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 text-sm min-h-[44px] font-medium flex items-center gap-2 transition-colors">
+                <Pause className="w-4 h-4" /> Pausar
+              </button>
+            )}
+            {isPausado && (
+              <button onClick={handleRetomar}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 text-sm min-h-[44px] font-medium flex items-center justify-center gap-2">
+                <RotateCcw className="w-4 h-4" /> Retomar
+              </button>
+            )}
+            {!isTerminal && (
+              <button onClick={() => setModalCancelar(true)}
+                className="px-4 py-2.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 text-sm min-h-[44px] font-medium flex items-center gap-2 transition-colors">
+                <X className="w-4 h-4" /> Cancelar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Terminal status card */}
+      {(isCancelado || isEntregue) && (
+        <div className={`card p-6 mb-4 sm:mb-6 text-center ${isCancelado ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+          <div className="text-4xl mb-2">{getStatusEmoji(pedido.status)}</div>
+          <h2 className="text-lg font-bold text-primary">{getStatusLabel(pedido.status).replace(/^.{2} /, '')}</h2>
         </div>
       )}
 
@@ -161,6 +313,9 @@ export default function PedidoDetalhe() {
         </div>
       </div>
 
+      {/* Histórico de Status */}
+      <StatusTimeline historico={historico} />
+
       {/* Link de tracking */}
       {!isCancelado && (
         <div className="bg-white card p-4 sm:p-6">
@@ -183,6 +338,26 @@ export default function PedidoDetalhe() {
           <p className="text-xs text-gray-500 mt-2">Compartilhe este link com o cliente para ele acompanhar o pedido</p>
         </div>
       )}
+
+      {/* Modals */}
+      <ModalMotivo
+        open={modalPausar}
+        title="Pausar Pedido"
+        confirmLabel="Pausar"
+        icon="pause"
+        onConfirm={handlePausar}
+        onCancel={() => setModalPausar(false)}
+        loading={loadingPausar}
+      />
+      <ModalMotivo
+        open={modalCancelar}
+        title="Cancelar Pedido"
+        confirmLabel="Cancelar"
+        icon="cancel"
+        onConfirm={handleCancelar}
+        onCancel={() => setModalCancelar(false)}
+        loading={loadingCancelar}
+      />
     </div>
   )
 }

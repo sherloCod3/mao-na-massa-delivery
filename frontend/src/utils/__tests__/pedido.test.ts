@@ -10,12 +10,15 @@ import {
   getStatusEmoji,
   getStatusStepLabel,
   getStatusGradient,
+  getStatusBgColor,
+  getAgingInfo,
+  calcMinutesSince,
 } from '../../utils/pedido'
 
 describe('utils/pedido', () => {
   describe('STATUS_FLOW', () => {
     it('defines the correct order', () => {
-      expect(STATUS_FLOW).toEqual(['recebido', 'producao', 'entrega', 'entregue'])
+      expect(STATUS_FLOW).toEqual(['pendente', 'producao', 'produzido', 'entrega', 'entregue'])
     })
   })
 
@@ -27,7 +30,9 @@ describe('utils/pedido', () => {
       }
     })
 
-    it('includes cancelado', () => {
+    it('includes pause and cancel', () => {
+      expect(STATUS_LABELS['pausado']).toBeDefined()
+      expect(STATUS_LABELS['pausado']).toContain('Pausado')
       expect(STATUS_LABELS['cancelado']).toBeDefined()
       expect(STATUS_LABELS['cancelado']).toContain('Cancelado')
     })
@@ -41,7 +46,8 @@ describe('utils/pedido', () => {
       }
     })
 
-    it('includes cancelado', () => {
+    it('includes pause and cancel', () => {
+      expect(STATUS_COLORS['pausado']).toBeDefined()
       expect(STATUS_COLORS['cancelado']).toBeDefined()
     })
   })
@@ -58,7 +64,7 @@ describe('utils/pedido', () => {
 
   describe('getStatusLabel()', () => {
     it('returns correct label for known status', () => {
-      expect(getStatusLabel('recebido')).toBe(STATUS_LABELS['recebido'])
+      expect(getStatusLabel('pendente')).toBe(STATUS_LABELS['pendente'])
       expect(getStatusLabel('entregue')).toBe(STATUS_LABELS['entregue'])
     })
 
@@ -87,12 +93,24 @@ describe('utils/pedido', () => {
     })
   })
 
+  describe('getStatusBgColor()', () => {
+    it('returns bg color for known status', () => {
+      expect(getStatusBgColor('pendente')).toContain('bg-')
+    })
+
+    it('returns fallback for unknown status', () => {
+      expect(getStatusBgColor('xyz')).toBe('bg-gray-50 border-gray-200')
+    })
+  })
+
   describe('getStatusEmoji()', () => {
     it('returns emoji for all known statuses', () => {
-      expect(getStatusEmoji('recebido')).toBe('📥')
+      expect(getStatusEmoji('pendente')).toBe('⏳')
       expect(getStatusEmoji('producao')).toBe('👩‍🍳')
+      expect(getStatusEmoji('produzido')).toBe('✅')
       expect(getStatusEmoji('entrega')).toBe('🚚')
-      expect(getStatusEmoji('entregue')).toBe('✅')
+      expect(getStatusEmoji('entregue')).toBe('🎉')
+      expect(getStatusEmoji('pausado')).toBe('⏸️')
       expect(getStatusEmoji('cancelado')).toBe('❌')
     })
 
@@ -116,14 +134,63 @@ describe('utils/pedido', () => {
 
   describe('getStatusGradient()', () => {
     it('returns gradient for flow statuses', () => {
-      expect(getStatusGradient('recebido')).toContain('from-')
+      expect(getStatusGradient('pendente')).toContain('from-')
       expect(getStatusGradient('producao')).toContain('from-')
+      expect(getStatusGradient('produzido')).toContain('from-')
       expect(getStatusGradient('entrega')).toContain('from-')
       expect(getStatusGradient('entregue')).toContain('from-')
     })
 
+    it('has gradients for pause and cancel', () => {
+      expect(getStatusGradient('pausado')).toContain('from-')
+      expect(getStatusGradient('cancelado')).toContain('from-')
+    })
+
     it('returns fallback gradient for unknown', () => {
-      expect(getStatusGradient('cancelado')).toBe('from-gray-500 to-gray-600')
+      expect(getStatusGradient('xyz')).toBe('from-gray-500 to-gray-600')
+    })
+  })
+
+  describe('getAgingInfo()', () => {
+    it('returns fresh for <30 min', () => {
+      const info = getAgingInfo(15)
+      expect(info.level).toBe('fresh')
+      expect(info.label).toBe('')
+      expect(info.cardClass).toBe('')
+    })
+
+    it('returns warning for 30-60 min', () => {
+      const info = getAgingInfo(35)
+      expect(info.level).toBe('warning')
+      expect(info.label).toContain('30min')
+      expect(info.cardClass).toContain('amber')
+    })
+
+    it('returns alert for 60-120 min', () => {
+      const info = getAgingInfo(90)
+      expect(info.level).toBe('alert')
+      expect(info.label).toContain('1h')
+      expect(info.cardClass).toContain('amber')
+    })
+
+    it('returns critical for 120+ min', () => {
+      const info = getAgingInfo(150)
+      expect(info.level).toBe('critical')
+      expect(info.label).toContain('2h')
+      expect(info.cardClass).toContain('red')
+    })
+  })
+
+  describe('calcMinutesSince()', () => {
+    it('returns positive number for past date', () => {
+      const mins = calcMinutesSince(new Date(Date.now() - 3600000).toISOString())
+      expect(mins).toBeGreaterThan(50)
+      expect(mins).toBeLessThan(70)
+    })
+
+    it('returns near 0 for current date', () => {
+      const mins = calcMinutesSince(new Date().toISOString())
+      expect(mins).toBeLessThan(1)
     })
   })
 })

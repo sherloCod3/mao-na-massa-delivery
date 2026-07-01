@@ -54,8 +54,6 @@ function delay(ms: number): Promise<void> {
 // ─── Main Request Function ───────────────────────────────────────
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  let lastError: unknown
-
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const res = await fetch(`${API_BASE}${url}`, {
@@ -98,7 +96,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
         // Retry? — only for idempotent GET requests
         if (options?.method === 'GET' && attempt < MAX_RETRIES && shouldRetry(res.status, message)) {
           await delay(RETRY_DELAY_MS * (attempt + 1))
-          lastError = apiError
           continue
         }
 
@@ -112,7 +109,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
       const isNetworkError = err instanceof TypeError
       if (options?.method === 'GET' && attempt < MAX_RETRIES && isNetworkError) {
         await delay(RETRY_DELAY_MS * (attempt + 1))
-        lastError = err
         continue
       }
 
@@ -133,7 +129,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
       // Re-throw ApiError directly, wrap others
       if (err instanceof ApiError) throw err
       if (err instanceof MutationQueuedError) throw err
-      lastError = err
       throw new ApiError(
         err instanceof Error ? err.message : 'Erro de conexão',
         'NETWORK_ERROR',
@@ -143,13 +138,11 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   // All retries exhausted
-  throw lastError instanceof ApiError
-    ? lastError
-    : new ApiError(
-        lastError instanceof Error ? lastError.message : 'Servidor indisponível',
-        'MAX_RETRIES',
-        503,
-      )
+  throw new ApiError(
+    'Servidor indisponível após múltiplas tentativas',
+    'MAX_RETRIES',
+    503,
+  )
 }
 
 // ─── Tipos compartilhados ───────────────────────────────────────
@@ -217,12 +210,22 @@ export interface PedidoItem {
   produto_nome: string | null
 }
 
+export interface StatusHistoryItem {
+  id: number
+  status_anterior: string | null
+  status_novo: string
+  alterado_por: string
+  motivo: string | null
+  created_at: string
+}
+
 export interface Pedido {
   id: number
   cliente_nome: string
   cliente_whatsapp: string | null
   token_acesso: string
   status: string
+  status_anterior: string | null
   forma_pagamento: string | null
   observacoes: string | null
   total: number
@@ -230,6 +233,7 @@ export interface Pedido {
   created_at: string
   updated_at: string
   itens: PedidoItem[]
+  status_history: StatusHistoryItem[]
 }
 
 export interface DashboardHoje {
@@ -379,6 +383,21 @@ export const pedidosApi = {
   obter: (id: number) => request<Pedido>(`/pedidos/${id}`),
   atualizarStatus: (id: number, status: string) =>
     request<Pedido>(`/pedidos/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  /** Avançar 1 step no fluxo canônico (pendente→producao→produzido→entrega→entregue) */
+  avancar: (id: number) =>
+    request<Pedido>(`/pedidos/${id}/avancar`, { method: 'POST' }),
+  /** Pausar pedido com motivo obrigatório */
+  pausar: (id: number, motivo: string) =>
+    request<Pedido>(`/pedidos/${id}/pausar`, { method: 'PUT', body: JSON.stringify({ motivo }) }),
+  /** Retomar pedido pausado (volta ao status anterior) */
+  retomar: (id: number) =>
+    request<Pedido>(`/pedidos/${id}/retomar`, { method: 'PUT' }),
+  /** Cancelar pedido com motivo obrigatório */
+  cancelar: (id: number, motivo: string) =>
+    request<Pedido>(`/pedidos/${id}/cancelar`, { method: 'PUT', body: JSON.stringify({ motivo }) }),
+  /** Histórico de status do pedido */
+  historico: (id: number) =>
+    request<StatusHistoryItem[]>(`/pedidos/${id}/historico`),
 }
 
 export const trackingApi = {
